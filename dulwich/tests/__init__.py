@@ -109,6 +109,7 @@ def self_test_suite():
         "bundle",
         "client",
         "config",
+        "credentials",
         "diff_tree",
         "fastexport",
         "file",

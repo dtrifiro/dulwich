@@ -46,7 +46,8 @@ import select
 import socket
 import subprocess
 import sys
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, IO
+from typing import (IO, Any, Callable, Dict, Generator, List, Optional, Set,
+                    Tuple)
 
 from urllib.parse import (
     quote as urlquote,
@@ -59,7 +60,8 @@ from urllib.parse import (
 
 
 import dulwich
-from dulwich.config import get_xdg_config_home_path
+from dulwich.config import Config, StackedConfig, get_xdg_config_home_path
+from dulwich.credentials import CredentialHelper, CredentialNotFoundError
 from dulwich.errors import (
     GitProtocolError,
     NotGitRepository,
@@ -2165,7 +2167,7 @@ class Urllib3HttpGitClient(AbstractHttpGitClient):
         base_url,
         dumb=None,
         pool_manager=None,
-        config=None,
+        config: Optional[Config] = None,
         username=None,
         password=None,
         **kwargs
@@ -2236,7 +2238,63 @@ class Urllib3HttpGitClient(AbstractHttpGitClient):
         return resp, resp.read
 
 
-HttpGitClient = Urllib3HttpGitClient
+class GitCredentialsHttpClient(Urllib3HttpGitClient):
+    """HTTP git client which uses credentials from git credential helpers"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.config:
+            # Note that using the StackedConfig default backends does not include
+            # the repo's local git config, but this should only happen for
+            # clones (no local config yet) and for dulwich CLI commands
+            self.config = StackedConfig.default()
+        self.credentials = None
+
+    def _http_request(self, url, *args, **kwargs):
+        while True:
+            try:
+                return super()._http_request(url, *args, **kwargs)
+            except (
+                HTTPUnauthorized,
+                NotGitRepository,  # some git servers returns 404 instead of 401 (github)
+            ) as exc:
+                if self.credentials is None:
+                    self.credentials = self.get_credentials(url)
+                try:
+                    credentials = next(self.credentials)
+                except StopIteration:
+                    raise exc
+
+                import base64
+
+                basic_auth = credentials[b"username"] + b":" + credentials[b"password"]
+                self.pool_manager.headers.update(
+                    {
+                        "authorization": f"Basic {base64.b64encode(basic_auth).decode('ascii')}"
+                    }
+                )
+
+    def get_credentials(self, url: str) -> Generator[Dict[bytes, bytes], None, None]:
+        assert self.config
+        if isinstance(self.config, StackedConfig):
+            backends = self.config.backends
+        else:
+            backends = [self.config]
+
+        for config in backends:
+            try:
+                helper = CredentialHelper.from_config(config, url)
+            except KeyError:
+                # no credential helpers in the given config
+                continue
+
+            try:
+                yield helper.get(url)
+            except CredentialNotFoundError:
+                continue
+
+
+HttpGitClient = GitCredentialsHttpClient
 
 
 def _win32_url_to_path(parsed) -> str:
