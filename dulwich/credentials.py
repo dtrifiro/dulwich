@@ -61,10 +61,13 @@ class CredentialHelper:
         if self._command[0] == "!":
             return self._command[1:]
 
-        argv = shlex.split(self._command)
-        if sys.platform == "win32":
-            # Windows paths are mangled by shlex
-            argv[0] = self._command.split(maxsplit=1)[0]
+        if sys.platform != "win32":
+            argv = shlex.split(self._command)
+        else:
+            # subprocess.run on windows uses subprocess.list2cmdline() to
+            # join list arguments, so it's not really important to get
+            # the splitting right
+            argv = self._command.split()
 
         if os.path.isabs(argv[0]):
             return argv

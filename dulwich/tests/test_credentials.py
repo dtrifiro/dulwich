@@ -23,6 +23,7 @@ class CredentialHelperTests(TestCase):
         helper = CredentialHelper(executable_path)
         self.assertEqual(helper._prepare_command(), [executable_path])
 
+    @skipIf(sys.platform == "win32", reason="Path handling on windows is different")
     def test_prepare_command_abspath_extra_args(self):
         executable_path = os.path.join(os.sep, "path", "to", "executable")
         helper = CredentialHelper(
@@ -56,6 +57,7 @@ class CredentialHelperTests(TestCase):
         with mock.patch.object(shutil, "which", new=which_mock):
             self.assertEqual(helper._prepare_command(), expected)
 
+    @skipIf(sys.platform == "win32", reason="Path handling on windows is different")
     @mock.patch("shutil.which")
     def test_prepare_command_extra_args(self, which):
         which.return_value = True
