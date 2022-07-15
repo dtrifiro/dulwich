@@ -30,29 +30,22 @@ import sys
 import tempfile
 import warnings
 
-from dulwich import errors
-from dulwich import porcelain
-from dulwich.object_store import (
-    tree_lookup_path,
-)
-from dulwich import objects
+from dulwich import errors, objects, porcelain
 from dulwich.config import Config
 from dulwich.errors import NotGitRepository
+from dulwich.object_store import tree_lookup_path
 from dulwich.repo import (
     InvalidUserIdentity,
-    Repo,
     MemoryRepo,
-    check_user_identity,
+    Repo,
     UnsupportedVersion,
+    check_user_identity,
 )
-from dulwich.tests import (
-    TestCase,
-    skipIf,
-)
+from dulwich.tests import TestCase, skipIf
 from dulwich.tests.utils import (
     open_repo,
-    tear_down_repo,
     setup_warning_catcher,
+    tear_down_repo,
 )
 
 missing_sha = b"b91fa4d900e17e99b433218e988c4eb4a3e9a097"
@@ -69,8 +62,12 @@ class CreateRepositoryTests(TestCase):
 
     def _check_repo_contents(self, repo, expect_bare):
         self.assertEqual(expect_bare, repo.bare)
-        self.assertFileContentsEqual(b"Unnamed repository", repo, "description")
-        self.assertFileContentsEqual(b"", repo, os.path.join("info", "exclude"))
+        self.assertFileContentsEqual(
+            b"Unnamed repository", repo, "description"
+        )
+        self.assertFileContentsEqual(
+            b"", repo, os.path.join("info", "exclude")
+        )
         self.assertFileContentsEqual(None, repo, "nonexistent file")
         barestr = b"bare = " + str(expect_bare).lower().encode("ascii")
         with repo.get_named_file("config") as f:
@@ -83,15 +80,15 @@ class CreateRepositoryTests(TestCase):
             self.assertIn(barestr, config_text, "%r" % config_text)
 
         if isinstance(repo, Repo):
-            expected_mode = '0o100644' if expect_filemode else '0o100666'
+            expected_mode = "0o100644" if expect_filemode else "0o100666"
             expected = {
-                'HEAD': expected_mode,
-                'config': expected_mode,
-                'description': expected_mode,
+                "HEAD": expected_mode,
+                "config": expected_mode,
+                "description": expected_mode,
             }
             actual = {
-                f[len(repo._controldir) + 1:]: oct(os.stat(f).st_mode)
-                for f in glob.glob(os.path.join(repo._controldir, '*'))
+                f[len(repo._controldir) + 1 :]: oct(os.stat(f).st_mode)
+                for f in glob.glob(os.path.join(repo._controldir, "*"))
                 if os.path.isfile(f)
             }
 
@@ -277,7 +274,9 @@ class RepositoryRootTests(TestCase):
             r.get_parents(b"a90fa2d900a17e99b433217e988c4eb4a2e9a097"),
         )
         r.update_shallow([b"a90fa2d900a17e99b433217e988c4eb4a2e9a097"], None)
-        self.assertEqual([], r.get_parents(b"a90fa2d900a17e99b433217e988c4eb4a2e9a097"))
+        self.assertEqual(
+            [], r.get_parents(b"a90fa2d900a17e99b433217e988c4eb4a2e9a097")
+        )
 
     def test_get_walker(self):
         r = self.open_repo("a.git")
@@ -289,14 +288,18 @@ class RepositoryRootTests(TestCase):
         self.assertEqual(
             [
                 e.commit.id
-                for e in r.get_walker([b"2a72d929692c41d8554c07f6301757ba18a65d91"])
+                for e in r.get_walker(
+                    [b"2a72d929692c41d8554c07f6301757ba18a65d91"]
+                )
             ],
             [b"2a72d929692c41d8554c07f6301757ba18a65d91"],
         )
         self.assertEqual(
             [
                 e.commit.id
-                for e in r.get_walker(b"2a72d929692c41d8554c07f6301757ba18a65d91")
+                for e in r.get_walker(
+                    b"2a72d929692c41d8554c07f6301757ba18a65d91"
+                )
             ],
             [b"2a72d929692c41d8554c07f6301757ba18a65d91"],
         )
@@ -331,7 +334,7 @@ class RepositoryRootTests(TestCase):
         self.assertFilesystemHidden(os.path.join(repo_dir, ".git"))
 
     def test_init_mkdir_unicode(self):
-        repo_name = u"\xa7"
+        repo_name = "\xa7"
         try:
             os.fsencode(repo_name)
         except UnicodeEncodeError:
@@ -400,7 +403,9 @@ class RepositoryRootTests(TestCase):
             encoded_path = r.path
             if not isinstance(encoded_path, bytes):
                 encoded_path = os.fsencode(encoded_path)
-            self.assertEqual(encoded_path, c.get((b"remote", b"origin"), b"url"))
+            self.assertEqual(
+                encoded_path, c.get((b"remote", b"origin"), b"url")
+            )
             self.assertEqual(
                 b"+refs/heads/*:refs/remotes/origin/*",
                 c.get((b"remote", b"origin"), b"fetch"),
@@ -409,9 +414,13 @@ class RepositoryRootTests(TestCase):
     def test_clone_no_head(self):
         temp_dir = self.mkdtemp()
         self.addCleanup(shutil.rmtree, temp_dir)
-        repo_dir = os.path.join(os.path.dirname(__file__), "..", "..", "testdata", "repos")
+        repo_dir = os.path.join(
+            os.path.dirname(__file__), "..", "..", "testdata", "repos"
+        )
         dest_dir = os.path.join(temp_dir, "a.git")
-        shutil.copytree(os.path.join(repo_dir, "a.git"), dest_dir, symlinks=True)
+        shutil.copytree(
+            os.path.join(repo_dir, "a.git"), dest_dir, symlinks=True
+        )
         r = Repo(dest_dir)
         del r.refs[b"refs/heads/master"]
         del r.refs[b"HEAD"]
@@ -454,7 +463,9 @@ class RepositoryRootTests(TestCase):
 
     def test_clone_branch(self):
         r = self.open_repo("a.git")
-        r.refs[b"refs/heads/mybranch"] = b"28237f4dc30d0d462658d6b937b08a0f0b6ef55a"
+        r.refs[
+            b"refs/heads/mybranch"
+        ] = b"28237f4dc30d0d462658d6b937b08a0f0b6ef55a"
         tmp_dir = self.mkdtemp()
         self.addCleanup(shutil.rmtree, tmp_dir)
         with r.clone(tmp_dir, mkdir=False, branch=b"mybranch") as t:
@@ -700,18 +711,20 @@ with open('foo', 'w') as f:
 r = Repo('.')
 r.stage(['foo'])
 """ % {
-            'executable': sys.executable,
-            'path': [os.path.join(os.path.dirname(__file__), '..', '..')] + sys.path}
+            "executable": sys.executable,
+            "path": [os.path.join(os.path.dirname(__file__), "..", "..")]
+            + sys.path,
+        }
 
         repo_dir = os.path.join(self.mkdtemp())
         self.addCleanup(shutil.rmtree, repo_dir)
         r = Repo.init(repo_dir)
         self.addCleanup(r.close)
 
-        with open(os.path.join(repo_dir, 'blah'), 'w') as f:
-            f.write('blah')
+        with open(os.path.join(repo_dir, "blah"), "w") as f:
+            f.write("blah")
 
-        r.stage(['blah'])
+        r.stage(["blah"])
 
         pre_commit = os.path.join(r.controldir(), "hooks", "pre-commit")
 
@@ -731,7 +744,7 @@ r.stage(['foo'])
         self.assertEqual([], r[commit_sha].parents)
 
         tree = r[r[commit_sha].tree]
-        self.assertEqual(set([b'blah', b'foo']), set(tree))
+        self.assertEqual(set([b"blah", b"foo"]), set(tree))
 
     def test_shell_hook_post_commit(self):
         if os.name != "posix":
@@ -809,11 +822,15 @@ exit 1
             "non-zero status 1",
         )
         for w in warnings_list:
-            if type(w) == type(expected_warning) and w.args == expected_warning.args:
+            if (
+                type(w) == type(expected_warning)
+                and w.args == expected_warning.args
+            ):
                 break
         else:
             raise AssertionError(
-                "Expected warning %r not in %r" % (expected_warning, warnings_list)
+                "Expected warning %r not in %r"
+                % (expected_warning, warnings_list)
             )
         self.assertEqual([commit_sha], r[commit_sha2].parents)
 
@@ -922,7 +939,9 @@ class BuildRepoRootTests(TestCase):
     def test_update_shallow(self):
         self._repo.update_shallow(None, None)  # no op
         self.assertEqual(set(), self._repo.get_shallow())
-        self._repo.update_shallow([b"a90fa2d900a17e99b433217e988c4eb4a2e9a097"], None)
+        self._repo.update_shallow(
+            [b"a90fa2d900a17e99b433217e988c4eb4a2e9a097"], None
+        )
         self.assertEqual(
             {b"a90fa2d900a17e99b433217e988c4eb4a2e9a097"},
             self._repo.get_shallow(),
@@ -1113,7 +1132,9 @@ class BuildRepoRootTests(TestCase):
         c.write_to_path()
         commit_sha = r.do_commit(b"message")
         self.assertEqual(b"Jelmer <jelmer@apache.org>", r[commit_sha].author)
-        self.assertEqual(b"Jelmer <jelmer@apache.org>", r[commit_sha].committer)
+        self.assertEqual(
+            b"Jelmer <jelmer@apache.org>", r[commit_sha].committer
+        )
 
     def test_commit_config_identity_strips_than(self):
         # commit falls back to the users' identity if it wasn't specified,
@@ -1125,7 +1146,9 @@ class BuildRepoRootTests(TestCase):
         c.write_to_path()
         commit_sha = r.do_commit(b"message")
         self.assertEqual(b"Jelmer <jelmer@apache.org>", r[commit_sha].author)
-        self.assertEqual(b"Jelmer <jelmer@apache.org>", r[commit_sha].committer)
+        self.assertEqual(
+            b"Jelmer <jelmer@apache.org>", r[commit_sha].committer
+        )
 
     def test_commit_config_identity_in_memoryrepo(self):
         # commit falls back to the users' identity if it wasn't specified
@@ -1136,7 +1159,9 @@ class BuildRepoRootTests(TestCase):
 
         commit_sha = r.do_commit(b"message", tree=objects.Tree().id)
         self.assertEqual(b"Jelmer <jelmer@apache.org>", r[commit_sha].author)
-        self.assertEqual(b"Jelmer <jelmer@apache.org>", r[commit_sha].committer)
+        self.assertEqual(
+            b"Jelmer <jelmer@apache.org>", r[commit_sha].committer
+        )
 
     def overrideEnv(self, name, value):
         def restore():
@@ -1322,16 +1347,16 @@ class BuildRepoRootTests(TestCase):
     def test_stage_submodule(self):
         r = self._repo
         s = Repo.init(os.path.join(r.path, "sub"), mkdir=True)
-        s.do_commit(b'message')
+        s.do_commit(b"message")
         r.stage(["sub"])
         self.assertEqual([b"a", b"sub"], list(r.open_index()))
 
     def test_unstage_midify_file_with_dir(self):
-        os.mkdir(os.path.join(self._repo.path, 'new_dir'))
-        full_path = os.path.join(self._repo.path, 'new_dir', 'foo')
+        os.mkdir(os.path.join(self._repo.path, "new_dir"))
+        full_path = os.path.join(self._repo.path, "new_dir", "foo")
 
-        with open(full_path, 'w') as f:
-            f.write('hello')
+        with open(full_path, "w") as f:
+            f.write("hello")
         porcelain.add(self._repo, paths=[full_path])
         porcelain.commit(
             self._repo,
@@ -1339,24 +1364,29 @@ class BuildRepoRootTests(TestCase):
             committer=b"Jane <jane@example.com>",
             author=b"John <john@example.com>",
         )
-        with open(full_path, 'a') as f:
-            f.write('something new')
-        self._repo.unstage(['new_dir/foo'])
+        with open(full_path, "a") as f:
+            f.write("something new")
+        self._repo.unstage(["new_dir/foo"])
         status = list(porcelain.status(self._repo))
-        self.assertEqual([{'add': [], 'delete': [], 'modify': []}, [b'new_dir/foo'], []], status)
+        self.assertEqual(
+            [{"add": [], "delete": [], "modify": []}, [b"new_dir/foo"], []],
+            status,
+        )
 
     def test_unstage_while_no_commit(self):
-        file = 'foo'
+        file = "foo"
         full_path = os.path.join(self._repo.path, file)
-        with open(full_path, 'w') as f:
-            f.write('hello')
+        with open(full_path, "w") as f:
+            f.write("hello")
         porcelain.add(self._repo, paths=[full_path])
         self._repo.unstage([file])
         status = list(porcelain.status(self._repo))
-        self.assertEqual([{'add': [], 'delete': [], 'modify': []}, [], ['foo']], status)
+        self.assertEqual(
+            [{"add": [], "delete": [], "modify": []}, [], ["foo"]], status
+        )
 
     def test_unstage_add_file(self):
-        file = 'foo'
+        file = "foo"
         full_path = os.path.join(self._repo.path, file)
         porcelain.commit(
             self._repo,
@@ -1364,18 +1394,20 @@ class BuildRepoRootTests(TestCase):
             committer=b"Jane <jane@example.com>",
             author=b"John <john@example.com>",
         )
-        with open(full_path, 'w') as f:
-            f.write('hello')
+        with open(full_path, "w") as f:
+            f.write("hello")
         porcelain.add(self._repo, paths=[full_path])
         self._repo.unstage([file])
         status = list(porcelain.status(self._repo))
-        self.assertEqual([{'add': [], 'delete': [], 'modify': []}, [], ['foo']], status)
+        self.assertEqual(
+            [{"add": [], "delete": [], "modify": []}, [], ["foo"]], status
+        )
 
     def test_unstage_modify_file(self):
-        file = 'foo'
+        file = "foo"
         full_path = os.path.join(self._repo.path, file)
-        with open(full_path, 'w') as f:
-            f.write('hello')
+        with open(full_path, "w") as f:
+            f.write("hello")
         porcelain.add(self._repo, paths=[full_path])
         porcelain.commit(
             self._repo,
@@ -1383,18 +1415,20 @@ class BuildRepoRootTests(TestCase):
             committer=b"Jane <jane@example.com>",
             author=b"John <john@example.com>",
         )
-        with open(full_path, 'a') as f:
-            f.write('broken')
+        with open(full_path, "a") as f:
+            f.write("broken")
         porcelain.add(self._repo, paths=[full_path])
         self._repo.unstage([file])
         status = list(porcelain.status(self._repo))
-        self.assertEqual([{'add': [], 'delete': [], 'modify': []}, [b'foo'], []], status)
+        self.assertEqual(
+            [{"add": [], "delete": [], "modify": []}, [b"foo"], []], status
+        )
 
     def test_unstage_remove_file(self):
-        file = 'foo'
+        file = "foo"
         full_path = os.path.join(self._repo.path, file)
-        with open(full_path, 'w') as f:
-            f.write('hello')
+        with open(full_path, "w") as f:
+            f.write("hello")
         porcelain.add(self._repo, paths=[full_path])
         porcelain.commit(
             self._repo,
@@ -1405,7 +1439,9 @@ class BuildRepoRootTests(TestCase):
         os.remove(full_path)
         self._repo.unstage([file])
         status = list(porcelain.status(self._repo))
-        self.assertEqual([{'add': [], 'delete': [], 'modify': []}, [b'foo'], []], status)
+        self.assertEqual(
+            [{"add": [], "delete": [], "modify": []}, [b"foo"], []], status
+        )
 
     @skipIf(
         sys.platform in ("win32", "darwin"),
@@ -1415,7 +1451,7 @@ class BuildRepoRootTests(TestCase):
         r = self._repo
         repo_path_bytes = os.fsencode(r.path)
         encodings = ("utf8", "latin1")
-        names = [u"À".encode(encoding) for encoding in encodings]
+        names = ["À".encode(encoding) for encoding in encodings]
         for name, encoding in zip(names, encodings):
             full_path = os.path.join(repo_path_bytes, name)
             with open(full_path, "wb") as f:
@@ -1461,7 +1497,9 @@ class CheckUserIdentityTests(TestCase):
         check_user_identity(b"Me <me@example.com>")
 
     def test_invalid(self):
-        self.assertRaises(InvalidUserIdentity, check_user_identity, b"No Email")
+        self.assertRaises(
+            InvalidUserIdentity, check_user_identity, b"No Email"
+        )
         self.assertRaises(
             InvalidUserIdentity, check_user_identity, b"Fullname <missing"
         )

@@ -26,15 +26,15 @@ import stat
 import struct
 import sys
 from typing import (
+    TYPE_CHECKING,
     Any,
     BinaryIO,
     Callable,
     Dict,
-    List,
-    Optional,
-    TYPE_CHECKING,
     Iterable,
     Iterator,
+    List,
+    Optional,
     Tuple,
 )
 
@@ -43,18 +43,14 @@ if TYPE_CHECKING:
 
 from dulwich.file import GitFile
 from dulwich.objects import (
-    Blob,
     S_IFGITLINK,
     S_ISGITLINK,
+    Blob,
     Tree,
     hex_to_sha,
     sha_to_hex,
 )
-from dulwich.pack import (
-    SHA1Reader,
-    SHA1Writer,
-)
-
+from dulwich.pack import SHA1Reader, SHA1Writer
 
 # TODO(jelmer): Switch to dataclass?
 IndexEntry = collections.namedtuple(
@@ -167,9 +163,8 @@ def read_cache_entry(f, version: int) -> Tuple[str, IndexEntry]:
     ) = struct.unpack(">LLLLLL20sH", f.read(20 + 4 * 6 + 2))
     if flags & FLAG_EXTENDED:
         if version < 3:
-            raise AssertionError(
-                'extended flag set in index with version < 3')
-        (extended_flags, ) = struct.unpack(">H", f.read(2))
+            raise AssertionError("extended flag set in index with version < 3")
+        (extended_flags,) = struct.unpack(">H", f.read(2))
     else:
         extended_flags = 0
     name = f.read((flags & 0x0FFF))
@@ -191,7 +186,8 @@ def read_cache_entry(f, version: int) -> Tuple[str, IndexEntry]:
             sha_to_hex(sha),
             flags & ~0x0FFF,
             extended_flags,
-        ))
+        ),
+    )
 
 
 def write_cache_entry(f, name, entry, version):
@@ -208,7 +204,7 @@ def write_cache_entry(f, name, entry, version):
     if entry.extended_flags:
         flags |= FLAG_EXTENDED
     if flags & FLAG_EXTENDED and version is not None and version < 3:
-        raise AssertionError('unable to use extended flags in version < 3')
+        raise AssertionError("unable to use extended flags in version < 3")
     f.write(
         struct.pack(
             b">LLLLLL20sH",
@@ -253,7 +249,11 @@ def read_index_dict(f):
     return ret
 
 
-def write_index(f: BinaryIO, entries: List[Tuple[bytes, IndexEntry]], version: Optional[int] = None):
+def write_index(
+    f: BinaryIO,
+    entries: List[Tuple[bytes, IndexEntry]],
+    version: Optional[int] = None,
+):
     """Write an index file.
 
     Args:
@@ -545,8 +545,11 @@ def changes_from_tree(
 
 
 def index_entry_from_stat(
-    stat_val, hex_sha: bytes, flags: int, mode: Optional[int] = None,
-    extended_flags: Optional[int] = None
+    stat_val,
+    hex_sha: bytes,
+    flags: int,
+    mode: Optional[int] = None,
+    extended_flags: Optional[int] = None,
 ):
     """Create a new index entry from a stat value.
 
@@ -569,7 +572,7 @@ def index_entry_from_stat(
         stat_val.st_size,
         hex_sha,
         flags,
-        extended_flags
+        extended_flags,
     )
 
 
@@ -928,7 +931,9 @@ def iter_fresh_entries(
         yield path, entry
 
 
-def iter_fresh_objects(paths, root_path, include_deleted=False, object_store=None):
+def iter_fresh_objects(
+    paths, root_path, include_deleted=False, object_store=None
+):
     """Iterate over versions of objecs on disk referenced by index.
 
     Args:
@@ -938,7 +943,9 @@ def iter_fresh_objects(paths, root_path, include_deleted=False, object_store=Non
       object_store: Optional object store to report new items to
     Returns: Iterator over path, sha, mode
     """
-    for path, entry in iter_fresh_entries(paths, root_path, object_store=object_store):
+    for path, entry in iter_fresh_entries(
+        paths, root_path, object_store=object_store
+    ):
         if entry is None:
             if include_deleted:
                 yield path, None, None
@@ -965,6 +972,7 @@ class locked_index(object):
 
     Works as a context manager.
     """
+
     def __init__(self, path):
         self._path = path
 

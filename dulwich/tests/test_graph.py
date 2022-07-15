@@ -21,11 +21,10 @@
 
 """Tests for dulwich.graph."""
 
+from dulwich.graph import _find_lcas, can_fast_forward
+from dulwich.repo import MemoryRepo
 from dulwich.tests import TestCase
 from dulwich.tests.utils import make_commit
-from dulwich.repo import MemoryRepo
-
-from dulwich.graph import _find_lcas, can_fast_forward
 
 
 class FindMergeBaseTests(TestCase):
@@ -177,7 +176,9 @@ class CanFastForwardTests(TestCase):
         c1 = make_commit(parents=[base.id])
         c2a = make_commit(parents=[c1.id], message=b"2a")
         c2b = make_commit(parents=[c1.id], message=b"2b")
-        r.object_store.add_objects([(base, None), (c1, None), (c2a, None), (c2b, None)])
+        r.object_store.add_objects(
+            [(base, None), (c1, None), (c2a, None), (c2b, None)]
+        )
         self.assertTrue(can_fast_forward(r, c1.id, c2a.id))
         self.assertTrue(can_fast_forward(r, c1.id, c2b.id))
         self.assertFalse(can_fast_forward(r, c2a.id, c2b.id))

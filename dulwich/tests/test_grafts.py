@@ -20,20 +20,18 @@
 """Tests for graftpoints."""
 
 import os
-import tempfile
 import shutil
+import tempfile
 
 from dulwich.errors import ObjectFormatException
-from dulwich.tests import TestCase
-from dulwich.objects import (
-    Tree,
-)
+from dulwich.objects import Tree
 from dulwich.repo import (
-    parse_graftpoints,
-    serialize_graftpoints,
     MemoryRepo,
     Repo,
+    parse_graftpoints,
+    serialize_graftpoints,
 )
+from dulwich.tests import TestCase
 
 
 def makesha(digit):
@@ -73,7 +71,9 @@ class GraftParserTests(TestCase):
 
 class GraftSerializerTests(TestCase):
     def assertSerialize(self, expected, graftpoints):
-        self.assertEqual(sorted(expected), sorted(serialize_graftpoints(graftpoints)))
+        self.assertEqual(
+            sorted(expected), sorted(serialize_graftpoints(graftpoints))
+        )
 
     def test_no_grafts(self):
         self.assertSerialize(b"", {})
@@ -136,7 +136,9 @@ class GraftsInRepositoryBase(object):
         r = self.get_repo_with_grafts({self._repo.head(): []})
         r._remove_graftpoints([self._repo.head()])
 
-        self.assertEqual([e.commit.id for e in r.get_walker()], self._shas[::-1])
+        self.assertEqual(
+            [e.commit.id for e in r.get_walker()], self._shas[::-1]
+        )
 
     def test_object_store_fail_invalid_parents(self):
         r = self._repo

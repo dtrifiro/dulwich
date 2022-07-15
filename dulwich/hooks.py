@@ -23,9 +23,7 @@
 import os
 import subprocess
 
-from dulwich.errors import (
-    HookError,
-)
+from dulwich.errors import HookError
 
 
 class Hook(object):
@@ -102,7 +100,8 @@ class ShellHook(Hook):
         try:
             ret = subprocess.call(
                 [os.path.relpath(self.filepath, self.cwd)] + list(args),
-                cwd=self.cwd)
+                cwd=self.cwd,
+            )
             if ret != 0:
                 if self.post_exec_callback is not None:
                     self.post_exec_callback(0, *args)
@@ -135,8 +134,7 @@ class PostCommitShellHook(ShellHook):
 
 
 class CommitMsgShellHook(ShellHook):
-    """commit-msg shell hook
-    """
+    """commit-msg shell hook"""
 
     def __init__(self, controldir):
         filepath = os.path.join(controldir, "hooks", "commit-msg")
@@ -195,9 +193,12 @@ class PostReceiveShellHook(ShellHook):
             out_data, err_data = p.communicate(in_data)
 
             if (p.returncode != 0) or err_data:
-                err_fmt = b"post-receive exit code: %d\n" + b"stdout:\n%s\nstderr:\n%s"
+                err_fmt = (
+                    b"post-receive exit code: %d\n"
+                    + b"stdout:\n%s\nstderr:\n%s"
+                )
                 err_msg = err_fmt % (p.returncode, out_data, err_data)
-                raise HookError(err_msg.decode('utf-8', 'backslashreplace'))
+                raise HookError(err_msg.decode("utf-8", "backslashreplace"))
             return out_data
         except OSError as err:
             raise HookError(repr(err))

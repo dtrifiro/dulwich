@@ -21,23 +21,18 @@
 """Compatibility tests for dulwich repositories."""
 
 
-from io import BytesIO
-from itertools import chain
 import os
 import tempfile
+from io import BytesIO
+from itertools import chain
 
-from dulwich.objects import (
-    hex_to_sha,
-)
-from dulwich.repo import (
-    check_ref_format,
-    Repo,
-)
+from dulwich.objects import hex_to_sha
+from dulwich.repo import Repo, check_ref_format
 from dulwich.tests.compat.utils import (
+    CompatTestCase,
     require_git_version,
     rmtree_ro,
     run_git_or_fail,
-    CompatTestCase,
 )
 
 
@@ -93,7 +88,9 @@ class ObjectStoreTestCase(CompatTestCase):
     # TODO(dborowitz): peeled ref tests
 
     def _get_loose_shas(self):
-        output = self._run_git(["rev-list", "--all", "--objects", "--unpacked"])
+        output = self._run_git(
+            ["rev-list", "--all", "--objects", "--unpacked"]
+        )
         return self._parse_objects(output)
 
     def _get_all_shas(self):
@@ -148,7 +145,9 @@ class WorkingTreeTestCase(ObjectStoreTestCase):
 
     def setUp(self):
         super(WorkingTreeTestCase, self).setUp()
-        self._worktree_path = self.create_new_worktree(self._repo.path, "branch")
+        self._worktree_path = self.create_new_worktree(
+            self._repo.path, "branch"
+        )
         self._worktree_repo = Repo(self._worktree_path)
         self.addCleanup(self._worktree_repo.close)
         self._mainworktree_repo = self._repo
@@ -184,13 +183,19 @@ class WorkingTreeTestCase(ObjectStoreTestCase):
         worktrees = self._parse_worktree_list(output)
         self.assertEqual(len(worktrees), self._number_of_working_tree)
         self.assertEqual(worktrees[0][1], "(bare)")
-        self.assertTrue(os.path.samefile(worktrees[0][0], self._mainworktree_repo.path))
+        self.assertTrue(
+            os.path.samefile(worktrees[0][0], self._mainworktree_repo.path)
+        )
 
-        output = run_git_or_fail(["worktree", "list"], cwd=self._mainworktree_repo.path)
+        output = run_git_or_fail(
+            ["worktree", "list"], cwd=self._mainworktree_repo.path
+        )
         worktrees = self._parse_worktree_list(output)
         self.assertEqual(len(worktrees), self._number_of_working_tree)
         self.assertEqual(worktrees[0][1], "(bare)")
-        self.assertTrue(os.path.samefile(worktrees[0][0], self._mainworktree_repo.path))
+        self.assertTrue(
+            os.path.samefile(worktrees[0][0], self._mainworktree_repo.path)
+        )
 
     def test_git_worktree_config(self):
         """Test that git worktree config parsing matches the git CLI's behavior."""
@@ -198,8 +203,12 @@ class WorkingTreeTestCase(ObjectStoreTestCase):
         require_git_version((2, 7, 0))
         test_name = "Jelmer"
         test_email = "jelmer@apache.org"
-        run_git_or_fail(["config", "user.name", test_name], cwd=self._repo.path)
-        run_git_or_fail(["config", "user.email", test_email], cwd=self._repo.path)
+        run_git_or_fail(
+            ["config", "user.name", test_name], cwd=self._repo.path
+        )
+        run_git_or_fail(
+            ["config", "user.email", test_email], cwd=self._repo.path
+        )
 
         worktree_cfg = self._worktree_repo.get_config()
         main_cfg = self._repo.get_config()
@@ -213,8 +222,20 @@ class WorkingTreeTestCase(ObjectStoreTestCase):
 
         # Read the config values in the worktree with the git cli and assert they match
         # the dulwich-parsed configs
-        output_name = run_git_or_fail(["config", "user.name"], cwd=self._mainworktree_repo.path).decode().rstrip("\n")
-        output_email = run_git_or_fail(["config", "user.email"], cwd=self._mainworktree_repo.path).decode().rstrip("\n")
+        output_name = (
+            run_git_or_fail(
+                ["config", "user.name"], cwd=self._mainworktree_repo.path
+            )
+            .decode()
+            .rstrip("\n")
+        )
+        output_email = (
+            run_git_or_fail(
+                ["config", "user.email"], cwd=self._mainworktree_repo.path
+            )
+            .decode()
+            .rstrip("\n")
+        )
         self.assertEqual(test_name, output_name)
         self.assertEqual(test_email, output_email)
 

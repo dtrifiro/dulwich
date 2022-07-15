@@ -27,16 +27,12 @@ from itertools import chain
 
 from dulwich.diff_tree import (
     RENAME_CHANGE_TYPES,
+    RenameDetector,
     tree_changes,
     tree_changes_for_merge,
-    RenameDetector,
 )
-from dulwich.errors import (
-    MissingCommitError,
-)
-from dulwich.objects import (
-    Tag,
-)
+from dulwich.errors import MissingCommitError
+from dulwich.objects import Tag
 
 ORDER_DATE = "date"
 ORDER_TOPO = "topo"
@@ -86,7 +82,9 @@ class WalkEntry(object):
                     parent = self._store[subtree_sha]
             else:
                 changes_func = tree_changes_for_merge
-                parent = [self._store[p].tree for p in self._get_parents(commit)]
+                parent = [
+                    self._store[p].tree for p in self._get_parents(commit)
+                ]
                 if path_prefix:
                     parent_trees = [self._store[p] for p in parent]
                     parent = []
@@ -193,7 +191,9 @@ class _CommitTimeQueue(object):
             is_excluded = sha in self._excluded
             if is_excluded:
                 self._exclude_parents(commit)
-                if self._pq and all(c.id in self._excluded for _, c in self._pq):
+                if self._pq and all(
+                    c.id in self._excluded for _, c in self._pq
+                ):
                     _, n = self._pq[0]
                     if self._last and n.commit_time >= self._last.commit_time:
                         # If the next commit is newer than the last one, we
@@ -205,7 +205,10 @@ class _CommitTimeQueue(object):
                     else:
                         reset_extra_commits = False
 
-            if self._min_time is not None and commit.commit_time < self._min_time:
+            if (
+                self._min_time is not None
+                and commit.commit_time < self._min_time
+            ):
                 # We want to stop walking at min_time, but commits at the
                 # boundary may be out of order with respect to their parents.
                 # So we walk _MAX_EXTRA_COMMITS more commits once we hit this

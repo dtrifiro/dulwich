@@ -27,34 +27,22 @@ import shutil
 import tempfile
 import time
 import types
-
 import warnings
 
-from dulwich.index import (
-    commit_tree,
-)
-from dulwich.objects import (
-    FixedSha,
-    Commit,
-    Tag,
-    object_class,
-)
+from dulwich.index import commit_tree
+from dulwich.objects import Commit, FixedSha, Tag, object_class
 from dulwich.pack import (
+    DELTA_TYPES,
     OFS_DELTA,
     REF_DELTA,
-    DELTA_TYPES,
-    obj_sha,
     SHA1Writer,
+    create_delta,
+    obj_sha,
     write_pack_header,
     write_pack_object,
-    create_delta,
 )
 from dulwich.repo import Repo
-from dulwich.tests import (  # noqa: F401
-    skipIf,
-    SkipTest,
-)
-
+from dulwich.tests import SkipTest, skipIf  # noqa: F401
 
 # Plain files are very frequently used in tests, so let the mode be very short.
 F = 0o100644  # Shorthand mode for Files.
@@ -76,7 +64,9 @@ def open_repo(name, temp_dir=None):
     """
     if temp_dir is None:
         temp_dir = tempfile.mkdtemp()
-    repo_dir = os.path.join(os.path.dirname(__file__), "..", "..", "testdata", "repos", name)
+    repo_dir = os.path.join(
+        os.path.dirname(__file__), "..", "..", "testdata", "repos", name
+    )
     temp_repo_dir = os.path.join(temp_dir, name)
     shutil.copytree(repo_dir, temp_repo_dir, symlinks=True)
     return Repo(temp_repo_dir)

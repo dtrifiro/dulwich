@@ -20,12 +20,11 @@
 
 """Tests for ignore files."""
 
-from io import BytesIO
 import os
 import re
 import shutil
 import tempfile
-from dulwich.tests import TestCase
+from io import BytesIO
 
 from dulwich.ignore import (
     IgnoreFilter,
@@ -37,7 +36,7 @@ from dulwich.ignore import (
     translate,
 )
 from dulwich.repo import Repo
-
+from dulwich.tests import TestCase
 
 POSITIVE_MATCH_TESTS = [
     (b"foo.c", b"*.c"),
@@ -165,7 +164,9 @@ class IgnoreFilterTests(TestCase):
         filter = IgnoreFilter([b"a.c", b"b.c", b"!c.c"])
         self.assertFalse(filter.is_ignored(b"c.c"))
         self.assertIs(None, filter.is_ignored(b"d.c"))
-        self.assertEqual([Pattern(b"!c.c")], list(filter.find_matching(b"c.c")))
+        self.assertEqual(
+            [Pattern(b"!c.c")], list(filter.find_matching(b"c.c"))
+        )
         self.assertEqual([], list(filter.find_matching(b"d.c")))
 
     def test_include_exclude_include(self):
@@ -238,19 +239,19 @@ class IgnoreFilterManagerTests(TestCase):
         self.addCleanup(shutil.rmtree, tmp_dir)
         repo = Repo.init(tmp_dir)
 
-        with open(os.path.join(repo.path, '.gitignore'), 'wb') as f:
-            f.write(b'/*\n')
-            f.write(b'!/foo\n')
+        with open(os.path.join(repo.path, ".gitignore"), "wb") as f:
+            f.write(b"/*\n")
+            f.write(b"!/foo\n")
 
-        os.mkdir(os.path.join(repo.path, 'foo'))
-        with open(os.path.join(repo.path, 'foo', '.gitignore'), 'wb') as f:
-            f.write(b'/bar\n')
+        os.mkdir(os.path.join(repo.path, "foo"))
+        with open(os.path.join(repo.path, "foo", ".gitignore"), "wb") as f:
+            f.write(b"/bar\n")
 
-        with open(os.path.join(repo.path, 'foo', 'bar'), 'wb') as f:
-            f.write(b'IGNORED')
+        with open(os.path.join(repo.path, "foo", "bar"), "wb") as f:
+            f.write(b"IGNORED")
 
         m = IgnoreFilterManager.from_repo(repo)
-        self.assertTrue(m.is_ignored('foo/bar'))
+        self.assertTrue(m.is_ignored("foo/bar"))
 
     def test_load_ignore_ignorecase(self):
         tmp_dir = tempfile.mkdtemp()

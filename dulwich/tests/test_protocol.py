@@ -23,21 +23,19 @@
 
 from io import BytesIO
 
-from dulwich.errors import (
-    HangupException,
-)
+from dulwich.errors import HangupException
 from dulwich.protocol import (
+    MULTI_ACK,
+    MULTI_ACK_DETAILED,
+    SINGLE_ACK,
+    BufferedPktLineWriter,
     GitProtocolError,
     PktLineParser,
     Protocol,
     ReceivableProtocol,
+    ack_type,
     extract_capabilities,
     extract_want_line_capabilities,
-    ack_type,
-    SINGLE_ACK,
-    MULTI_ACK,
-    MULTI_ACK_DETAILED,
-    BufferedPktLineWriter,
 )
 from dulwich.tests import TestCase
 
@@ -126,7 +124,10 @@ class ReceivableBytesIO(BytesIO):
     def recv(self, size):
         # fail fast if no bytes are available; in a real socket, this would
         # block forever
-        if self.tell() == len(self.getvalue()) and not self.allow_read_past_eof:
+        if (
+            self.tell() == len(self.getvalue())
+            and not self.allow_read_past_eof
+        ):
             raise GitProtocolError("Blocking read past end of socket")
         if size == 1:
             return self.read(1)
@@ -211,10 +212,14 @@ class CapabilitiesTestCase(TestCase):
     def test_caps(self):
         self.assertEqual((b"bla", [b"la"]), extract_capabilities(b"bla\0la"))
         self.assertEqual((b"bla", [b"la"]), extract_capabilities(b"bla\0la\n"))
-        self.assertEqual((b"bla", [b"la", b"la"]), extract_capabilities(b"bla\0la la"))
+        self.assertEqual(
+            (b"bla", [b"la", b"la"]), extract_capabilities(b"bla\0la la")
+        )
 
     def test_plain_want_line(self):
-        self.assertEqual((b"want bla", []), extract_want_line_capabilities(b"want bla"))
+        self.assertEqual(
+            (b"want bla", []), extract_want_line_capabilities(b"want bla")
+        )
 
     def test_caps_want_line(self):
         self.assertEqual(

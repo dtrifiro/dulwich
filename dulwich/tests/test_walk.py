@@ -20,35 +20,21 @@
 
 """Tests for commit walking functionality."""
 
-from itertools import (
-    permutations,
-)
+from itertools import permutations
 from unittest import expectedFailure
 
 from dulwich.diff_tree import (
     CHANGE_MODIFY,
     CHANGE_RENAME,
-    TreeChange,
     RenameDetector,
+    TreeChange,
 )
-from dulwich.errors import (
-    MissingCommitError,
-)
-from dulwich.object_store import (
-    MemoryObjectStore,
-)
-from dulwich.objects import (
-    Commit,
-    Blob,
-)
-from dulwich.walk import ORDER_TOPO, WalkEntry, Walker, _topo_reorder
+from dulwich.errors import MissingCommitError
+from dulwich.object_store import MemoryObjectStore
+from dulwich.objects import Blob, Commit
 from dulwich.tests import TestCase
-from dulwich.tests.utils import (
-    F,
-    make_object,
-    make_tag,
-    build_commit_graph,
-)
+from dulwich.tests.utils import F, build_commit_graph, make_object, make_tag
+from dulwich.walk import ORDER_TOPO, WalkEntry, Walker, _topo_reorder
 
 
 class TestWalkEntry(object):
@@ -80,7 +66,9 @@ class WalkerTest(TestCase):
         attrs = kwargs.pop("attrs", {})
         for i, t in enumerate(times):
             attrs.setdefault(i + 1, {})["commit_time"] = t
-        return build_commit_graph(self.store, commit_spec, attrs=attrs, **kwargs)
+        return build_commit_graph(
+            self.store, commit_spec, attrs=attrs, **kwargs
+        )
 
     def make_linear_commits(self, num_commits, **kwargs):
         commit_spec = []
@@ -186,7 +174,9 @@ class WalkerTest(TestCase):
 
     def test_reverse_after_max_entries(self):
         c1, c2, c3 = self.make_linear_commits(3)
-        self.assertWalkYields([c1, c2, c3], [c3.id], max_entries=3, reverse=True)
+        self.assertWalkYields(
+            [c1, c2, c3], [c3.id], max_entries=3, reverse=True
+        )
         self.assertWalkYields([c2, c3], [c3.id], max_entries=2, reverse=True)
         self.assertWalkYields([c3], [c3.id], max_entries=1, reverse=True)
 
@@ -205,7 +195,9 @@ class WalkerTest(TestCase):
         e2 = TestWalkEntry(
             c2,
             [
-                TreeChange(CHANGE_MODIFY, (b"a", F, blob_a1.id), (b"a", F, blob_a2.id)),
+                TreeChange(
+                    CHANGE_MODIFY, (b"a", F, blob_a1.id), (b"a", F, blob_a2.id)
+                ),
                 TreeChange.add((b"b", F, blob_b2.id)),
             ],
         )
@@ -226,7 +218,9 @@ class WalkerTest(TestCase):
         # a is a modify/add conflict and b is not conflicted.
         changes = [
             [
-                TreeChange(CHANGE_MODIFY, (b"a", F, blob_a1.id), (b"a", F, blob_a3.id)),
+                TreeChange(
+                    CHANGE_MODIFY, (b"a", F, blob_a1.id), (b"a", F, blob_a3.id)
+                ),
                 TreeChange.add((b"a", F, blob_a3.id)),
             ]
         ]
@@ -269,8 +263,12 @@ class WalkerTest(TestCase):
 
         # All changes are included, not just for requested paths.
         changes = [
-            TreeChange(CHANGE_MODIFY, (b"a", F, blob_a1.id), (b"a", F, blob_a3.id)),
-            TreeChange(CHANGE_MODIFY, (b"x/b", F, blob_b2.id), (b"x/b", F, blob_b3.id)),
+            TreeChange(
+                CHANGE_MODIFY, (b"a", F, blob_a1.id), (b"a", F, blob_a3.id)
+            ),
+            TreeChange(
+                CHANGE_MODIFY, (b"x/b", F, blob_b2.id), (b"x/b", F, blob_b3.id)
+            ),
         ]
         self.assertWalkYields(
             [TestWalkEntry(c3, changes)], [c3.id], max_entries=1, paths=[b"a"]
@@ -353,8 +351,12 @@ class WalkerTest(TestCase):
 
         self.assertWalkYields(
             [
-                TestWalkEntry(c5, [TreeChange(CHANGE_RENAME, e(b"b"), e(b"c"))]),
-                TestWalkEntry(c3, [TreeChange(CHANGE_RENAME, e(b"a"), e(b"b"))]),
+                TestWalkEntry(
+                    c5, [TreeChange(CHANGE_RENAME, e(b"b"), e(b"c"))]
+                ),
+                TestWalkEntry(
+                    c3, [TreeChange(CHANGE_RENAME, e(b"a"), e(b"b"))]
+                ),
                 TestWalkEntry(c1, [TreeChange.add(e(b"a"))]),
             ],
             [c6.id],
@@ -382,8 +384,12 @@ class WalkerTest(TestCase):
         # Once the path changes to b, we aren't interested in a or c anymore.
         self.assertWalkYields(
             [
-                TestWalkEntry(c6, [TreeChange(CHANGE_RENAME, e(b"a"), e(b"c"))]),
-                TestWalkEntry(c5, [TreeChange(CHANGE_RENAME, e(b"b"), e(b"a"))]),
+                TestWalkEntry(
+                    c6, [TreeChange(CHANGE_RENAME, e(b"a"), e(b"c"))]
+                ),
+                TestWalkEntry(
+                    c5, [TreeChange(CHANGE_RENAME, e(b"b"), e(b"a"))]
+                ),
                 TestWalkEntry(c4, [TreeChange.add(e(b"b"))]),
             ],
             [c6.id],
@@ -425,7 +431,9 @@ class WalkerTest(TestCase):
         self.assertWalkYields([c2], [c3.id], since=50, until=150)
 
     def test_since_over_scan(self):
-        commits = self.make_linear_commits(11, times=[9, 0, 1, 2, 3, 4, 5, 8, 6, 7, 9])
+        commits = self.make_linear_commits(
+            11, times=[9, 0, 1, 2, 3, 4, 5, 8, 6, 7, 9]
+        )
         c8, _, c10, c11 = commits[-4:]
         del self.store[commits[0].id]
         # c9 is older than we want to walk, but is out of order with its
@@ -508,7 +516,9 @@ class WalkEntryTest(TestCase):
         attrs = kwargs.pop("attrs", {})
         for i, t in enumerate(times):
             attrs.setdefault(i + 1, {})["commit_time"] = t
-        return build_commit_graph(self.store, commit_spec, attrs=attrs, **kwargs)
+        return build_commit_graph(
+            self.store, commit_spec, attrs=attrs, **kwargs
+        )
 
     def make_linear_commits(self, num_commits, **kwargs):
         commit_spec = []

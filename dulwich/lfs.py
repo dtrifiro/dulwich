@@ -61,7 +61,9 @@ class LFSStore(object):
         """
         sha = hashlib.sha256()
         tmpdir = os.path.join(self.path, "tmp")
-        with tempfile.NamedTemporaryFile(dir=tmpdir, mode="wb", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            dir=tmpdir, mode="wb", delete=False
+        ) as f:
             for chunk in chunks:
                 sha.update(chunk)
                 f.write(chunk)

@@ -289,8 +289,7 @@ class TreeBlobNormalizer(BlobNormalizer):
         super().__init__(config_stack, git_attributes)
         if tree:
             self.existing_paths = {
-                name
-                for name, _, _ in object_store.iter_tree_contents(tree)
+                name for name, _, _ in object_store.iter_tree_contents(tree)
             }
         else:
             self.existing_paths = set()

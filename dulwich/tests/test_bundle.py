@@ -23,15 +23,8 @@
 import os
 import tempfile
 
-from dulwich.tests import (
-    TestCase,
-)
-
-from dulwich.bundle import (
-    Bundle,
-    read_bundle,
-    write_bundle,
-)
+from dulwich.bundle import Bundle, read_bundle, write_bundle
+from dulwich.tests import TestCase
 
 
 class BundleTests(TestCase):

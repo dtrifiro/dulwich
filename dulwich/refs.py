@@ -25,21 +25,9 @@
 import os
 from typing import Dict, Optional
 
-from dulwich.errors import (
-    PackedRefsException,
-    RefFormatError,
-)
-from dulwich.objects import (
-    git_line,
-    valid_hexsha,
-    ZERO_SHA,
-    Tag,
-)
-from dulwich.file import (
-    GitFile,
-    ensure_dir_exists,
-)
-
+from dulwich.errors import PackedRefsException, RefFormatError
+from dulwich.file import GitFile, ensure_dir_exists
+from dulwich.objects import ZERO_SHA, Tag, git_line, valid_hexsha
 
 HEADREF = b"HEAD"
 SYMREF = b"ref: "
@@ -123,7 +111,9 @@ class RefsContainer(object):
             return
         if message is None:
             return
-        self._logger(ref, old_sha, new_sha, committer, timestamp, timezone, message)
+        self._logger(
+            ref, old_sha, new_sha, committer, timestamp, timezone, message
+        )
 
     def set_symbolic_ref(
         self,
@@ -191,7 +181,9 @@ class RefsContainer(object):
                 except KeyError:
                     pass
         for ref in to_delete:
-            self.remove_if_equals(b"/".join((base, ref)), None, message=message)
+            self.remove_if_equals(
+                b"/".join((base, ref)), None, message=message
+            )
 
     def allkeys(self):
         """All refs present in this container."""
@@ -346,8 +338,15 @@ class RefsContainer(object):
         """
         raise NotImplementedError(self.set_if_equals)
 
-    def add_if_new(self, name, ref, committer=None, timestamp=None,
-                   timezone=None, message=None):
+    def add_if_new(
+        self,
+        name,
+        ref,
+        committer=None,
+        timestamp=None,
+        timezone=None,
+        message=None,
+    ):
         """Add a new reference only if it does not already exist.
 
         Args:
@@ -693,7 +692,10 @@ class DiskRefsContainer(RefsContainer):
                 return {}
             with f:
                 first_line = next(iter(f)).rstrip()
-                if first_line.startswith(b"# pack-refs") and b" peeled" in first_line:
+                if (
+                    first_line.startswith(b"# pack-refs")
+                    and b" peeled" in first_line
+                ):
                     for sha, name, peeled in read_packed_refs_with_peeled(f):
                         self._packed_refs[name] = sha
                         if peeled:
@@ -854,7 +856,9 @@ class DiskRefsContainer(RefsContainer):
                     # read again while holding the lock
                     orig_ref = self.read_loose_ref(realname)
                     if orig_ref is None:
-                        orig_ref = self.get_packed_refs().get(realname, ZERO_SHA)
+                        orig_ref = self.get_packed_refs().get(
+                            realname, ZERO_SHA
+                        )
                     if orig_ref != old_ref:
                         f.abort()
                         return False
@@ -991,7 +995,7 @@ class DiskRefsContainer(RefsContainer):
             except ValueError:
                 break
 
-            if parent == b'refs':
+            if parent == b"refs":
                 break
             parent_filename = self.refpath(parent)
             try:
@@ -1031,7 +1035,9 @@ def read_packed_refs(f):
             # Comment
             continue
         if line.startswith(b"^"):
-            raise PackedRefsException("found peeled ref in packed-refs without peeled")
+            raise PackedRefsException(
+                "found peeled ref in packed-refs without peeled"
+            )
         yield _split_ref_line(line)
 
 
@@ -1134,18 +1140,19 @@ def _set_origin_head(refs, origin, origin_head):
 
 
 def _set_default_branch(
-        refs: RefsContainer, origin: bytes, origin_head: bytes, branch: bytes,
-        ref_message: Optional[bytes]) -> bytes:
-    """Set the default branch.
-    """
+    refs: RefsContainer,
+    origin: bytes,
+    origin_head: bytes,
+    branch: bytes,
+    ref_message: Optional[bytes],
+) -> bytes:
+    """Set the default branch."""
     origin_base = b"refs/remotes/" + origin + b"/"
     if branch:
         origin_ref = origin_base + branch
         if origin_ref in refs:
             local_ref = LOCAL_BRANCH_PREFIX + branch
-            refs.add_if_new(
-                local_ref, refs[origin_ref], ref_message
-            )
+            refs.add_if_new(local_ref, refs[origin_ref], ref_message)
             head_ref = local_ref
         elif LOCAL_TAG_PREFIX + branch in refs:
             head_ref = LOCAL_TAG_PREFIX + branch
@@ -1160,13 +1167,11 @@ def _set_default_branch(
         else:
             origin_ref = origin_head
         try:
-            refs.add_if_new(
-                head_ref, refs[origin_ref], ref_message
-            )
+            refs.add_if_new(head_ref, refs[origin_ref], ref_message)
         except KeyError:
             pass
     else:
-        raise ValueError('neither origin_head nor branch are provided')
+        raise ValueError("neither origin_head nor branch are provided")
     return head_ref
 
 
@@ -1178,9 +1183,7 @@ def _set_head(refs, head_ref, ref_message):
             _cls, obj = head.object
             head = obj.get_object(obj).id
         del refs[HEADREF]
-        refs.set_if_equals(
-            HEADREF, None, head, message=ref_message
-        )
+        refs.set_if_equals(HEADREF, None, head, message=ref_message)
     else:
         # set HEAD to specific branch
         try:
@@ -1215,6 +1218,9 @@ def _import_remote_refs(
     tags = {
         n[len(LOCAL_TAG_PREFIX) :]: v
         for (n, v) in stripped_refs.items()
-        if n.startswith(LOCAL_TAG_PREFIX) and not n.endswith(ANNOTATED_TAG_SUFFIX)
+        if n.startswith(LOCAL_TAG_PREFIX)
+        and not n.endswith(ANNOTATED_TAG_SUFFIX)
     }
-    refs_container.import_refs(LOCAL_TAG_PREFIX, tags, message=message, prune=prune_tags)
+    refs_container.import_refs(
+        LOCAL_TAG_PREFIX, tags, message=message, prune=prune_tags
+    )

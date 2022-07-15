@@ -28,12 +28,12 @@ local disk (Repo).
 
 """
 
-from io import BytesIO
 import os
-import sys
 import stat
+import sys
 import time
-from typing import Optional, Tuple, TYPE_CHECKING, List, Dict, Union, Iterable
+from io import BytesIO
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple, Union
 
 if TYPE_CHECKING:
     # There are no circular imports here, but we try to defer imports as long
@@ -42,70 +42,61 @@ if TYPE_CHECKING:
     from dulwich.config import StackedConfig, ConfigFile
     from dulwich.index import Index
 
+import warnings
+
 from dulwich.errors import (
+    CommitError,
+    HookError,
     NoIndexPresent,
     NotBlobError,
     NotCommitError,
     NotGitRepository,
-    NotTreeError,
     NotTagError,
-    CommitError,
+    NotTreeError,
     RefFormatError,
-    HookError,
 )
-from dulwich.file import (
-    GitFile,
+from dulwich.file import GitFile
+from dulwich.hooks import (
+    CommitMsgShellHook,
+    Hook,
+    PostCommitShellHook,
+    PostReceiveShellHook,
+    PreCommitShellHook,
 )
+from dulwich.line_ending import BlobNormalizer, TreeBlobNormalizer
 from dulwich.object_store import (
+    BaseObjectStore,
     DiskObjectStore,
     MemoryObjectStore,
-    BaseObjectStore,
     ObjectStoreGraphWalker,
 )
 from dulwich.objects import (
-    check_hexsha,
-    valid_hexsha,
     Blob,
     Commit,
     ShaFile,
     Tag,
     Tree,
+    check_hexsha,
+    valid_hexsha,
 )
-from dulwich.pack import (
-    pack_objects_to_data,
-)
-
-from dulwich.hooks import (
-    Hook,
-    PreCommitShellHook,
-    PostCommitShellHook,
-    CommitMsgShellHook,
-    PostReceiveShellHook,
-)
-
-from dulwich.line_ending import BlobNormalizer, TreeBlobNormalizer
-
-from dulwich.refs import (  # noqa: F401
-    ANNOTATED_TAG_SUFFIX,
+from dulwich.pack import pack_objects_to_data
+from dulwich.refs import ANNOTATED_TAG_SUFFIX  # noqa: F401
+from dulwich.refs import (
     LOCAL_BRANCH_PREFIX,
     LOCAL_TAG_PREFIX,
-    check_ref_format,
-    RefsContainer,
-    DictRefsContainer,
-    InfoRefsContainer,
-    DiskRefsContainer,
-    read_packed_refs,
-    read_packed_refs_with_peeled,
-    write_packed_refs,
     SYMREF,
+    DictRefsContainer,
+    DiskRefsContainer,
+    InfoRefsContainer,
+    RefsContainer,
     _set_default_branch,
     _set_head,
     _set_origin_head,
+    check_ref_format,
+    read_packed_refs,
+    read_packed_refs_with_peeled,
+    write_packed_refs,
 )
-
-
-import warnings
-
 
 CONTROLDIR = ".git"
 OBJECTDIR = "objects"
@@ -163,7 +154,9 @@ def _get_default_identity() -> Tuple[str, str]:
     return (fullname, email)
 
 
-def get_user_identity(config: "StackedConfig", kind: Optional[str] = None) -> bytes:
+def get_user_identity(
+    config: "StackedConfig", kind: Optional[str] = None
+) -> bytes:
     """Determine the identity to use for new commits.
 
     If kind is set, this first checks
@@ -533,7 +526,9 @@ class BaseRepo(object):
             # commits aren't missing.
             haves = []
 
-        parents_provider = ParentsProvider(self.object_store, shallows=shallows)
+        parents_provider = ParentsProvider(
+            self.object_store, shallows=shallows
+        )
 
         def get_parents(commit):
             return parents_provider.get_parents(commit.id, commit)
@@ -761,7 +756,9 @@ class BaseRepo(object):
         if isinstance(include, str):
             include = [include]
 
-        kwargs["get_parents"] = lambda commit: self.get_parents(commit.id, commit)
+        kwargs["get_parents"] = lambda commit: self.get_parents(
+            commit.id, commit
+        )
 
         return Walker(self.object_store, include, *args, **kwargs)
 
@@ -827,7 +824,9 @@ class BaseRepo(object):
         else:
             raise ValueError(name)
 
-    def _get_user_identity(self, config: "StackedConfig", kind: str = None) -> bytes:
+    def _get_user_identity(
+        self, config: "StackedConfig", kind: str = None
+    ) -> bytes:
         """Determine the identity to use for new commits."""
         # TODO(jelmer): Deprecate this function in favor of get_user_identity
         return get_user_identity(config)
@@ -1061,15 +1060,17 @@ class Repo(BaseRepo):
         self,
         root: str,
         object_store: Optional[BaseObjectStore] = None,
-        bare: Optional[bool] = None
+        bare: Optional[bool] = None,
     ) -> None:
         hidden_path = os.path.join(root, CONTROLDIR)
         if bare is None:
-            if (os.path.isfile(hidden_path) or
-                    os.path.isdir(os.path.join(hidden_path, OBJECTDIR))):
+            if os.path.isfile(hidden_path) or os.path.isdir(
+                os.path.join(hidden_path, OBJECTDIR)
+            ):
                 bare = False
-            elif (os.path.isdir(os.path.join(root, OBJECTDIR)) and
-                    os.path.isdir(os.path.join(root, REFSDIR))):
+            elif os.path.isdir(
+                os.path.join(root, OBJECTDIR)
+            ) and os.path.isdir(os.path.join(root, REFSDIR)):
                 bare = True
             else:
                 raise NotGitRepository(
@@ -1099,8 +1100,7 @@ class Repo(BaseRepo):
         config = self.get_config()
         try:
             repository_format_version = config.get(
-                "core",
-                "repositoryformatversion"
+                "core", "repositoryformatversion"
             )
             format_version = (
                 0
@@ -1133,7 +1133,9 @@ class Repo(BaseRepo):
             with graft_file:
                 self._graftpoints.update(parse_graftpoints(graft_file))
 
-        self.hooks["pre-commit"] = PreCommitShellHook(self.path, self.controldir())
+        self.hooks["pre-commit"] = PreCommitShellHook(
+            self.path, self.controldir()
+        )
         self.hooks["commit-msg"] = CommitMsgShellHook(self.controldir())
         self.hooks["post-commit"] = PostCommitShellHook(self.controldir())
         self.hooks["post-receive"] = PostReceiveShellHook(self.controldir())
@@ -1285,7 +1287,12 @@ class Repo(BaseRepo):
         # missing index file, which is treated as empty.
         return not self.bare
 
-    def stage(self, fs_paths: Union[str, bytes, os.PathLike, Iterable[Union[str, bytes, os.PathLike]]]) -> None:
+    def stage(
+        self,
+        fs_paths: Union[
+            str, bytes, os.PathLike, Iterable[Union[str, bytes, os.PathLike]]
+        ],
+    ) -> None:
         """Stage a set of paths.
 
         Args:
@@ -1299,10 +1306,10 @@ class Repo(BaseRepo):
         fs_paths = list(fs_paths)
 
         from dulwich.index import (
-            blob_from_path_and_stat,
-            index_entry_from_stat,
-            index_entry_from_directory,
             _fs_to_tree_path,
+            blob_from_path_and_stat,
+            index_entry_from_directory,
+            index_entry_from_stat,
         )
 
         index = self.open_index()
@@ -1335,7 +1342,9 @@ class Repo(BaseRepo):
                             del index[tree_path]
                         except KeyError:
                             pass
-                elif not stat.S_ISREG(st.st_mode) and not stat.S_ISLNK(st.st_mode):
+                elif not stat.S_ISREG(st.st_mode) and not stat.S_ISLNK(
+                    st.st_mode
+                ):
                     try:
                         del index[tree_path]
                     except KeyError:
@@ -1353,14 +1362,11 @@ class Repo(BaseRepo):
           fs_paths: a list of files to unstage,
             relative to the repository path
         """
-        from dulwich.index import (
-            IndexEntry,
-            _fs_to_tree_path,
-            )
+        from dulwich.index import IndexEntry, _fs_to_tree_path
 
         index = self.open_index()
         try:
-            tree_id = self[b'HEAD'].tree
+            tree_id = self[b"HEAD"].tree
         except KeyError:
             # no head mean no commit in the repo
             for fs_path in fs_paths:
@@ -1373,7 +1379,8 @@ class Repo(BaseRepo):
             tree_path = _fs_to_tree_path(fs_path)
             try:
                 tree_entry = self.object_store[tree_id].lookup_path(
-                    self.object_store.__getitem__, tree_path)
+                    self.object_store.__getitem__, tree_path
+                )
             except KeyError:
                 # if tree_entry didnt exist, this file was being added, so
                 # remove index entry
@@ -1381,7 +1388,9 @@ class Repo(BaseRepo):
                     del index[tree_path]
                     continue
                 except KeyError:
-                    raise KeyError("file '%s' not in index" % (tree_path.decode()))
+                    raise KeyError(
+                        "file '%s' not in index" % (tree_path.decode())
+                    )
 
             st = None
             try:
@@ -1390,8 +1399,8 @@ class Repo(BaseRepo):
                 pass
 
             index_entry = IndexEntry(
-                ctime=(self[b'HEAD'].commit_time, 0),
-                mtime=(self[b'HEAD'].commit_time, 0),
+                ctime=(self[b"HEAD"].commit_time, 0),
+                mtime=(self[b"HEAD"].commit_time, 0),
                 dev=st.st_dev if st else 0,
                 ino=st.st_ino if st else 0,
                 mode=tree_entry[0],
@@ -1400,7 +1409,7 @@ class Repo(BaseRepo):
                 size=len(self[tree_entry[1]].data),
                 sha=tree_entry[1],
                 flags=0,
-                extended_flags=0
+                extended_flags=0,
             )
 
             index[tree_path] = index_entry
@@ -1468,7 +1477,9 @@ class Repo(BaseRepo):
                 message=ref_message,
             )
             target.refs.import_refs(
-                b"refs/tags", self.refs.as_dict(b"refs/tags"), message=ref_message
+                b"refs/tags",
+                self.refs.as_dict(b"refs/tags"),
+                message=ref_message,
             )
 
             head_chain, origin_sha = self.refs.follow(b"HEAD")
@@ -1495,6 +1506,7 @@ class Repo(BaseRepo):
                 target.close()
             if mkdir:
                 import shutil
+
                 shutil.rmtree(target_path)
             raise
         return target
@@ -1518,7 +1530,9 @@ class Repo(BaseRepo):
                 head = self.get_object(obj)
             tree = head.tree
         config = self.get_config()
-        honor_filemode = config.get_boolean(b"core", b"filemode", os.name != "nt")
+        honor_filemode = config.get_boolean(
+            b"core", b"filemode", os.name != "nt"
+        )
         if config.get_boolean(b"core", b"core.protectNTFS", os.name == "nt"):
             validate_path_element = validate_path_element_ntfs
         else:
@@ -1576,7 +1590,9 @@ class Repo(BaseRepo):
         for d in BASE_DIRECTORIES:
             os.mkdir(os.path.join(controldir, *d))
         if object_store is None:
-            object_store = DiskObjectStore.init(os.path.join(controldir, OBJECTDIR))
+            object_store = DiskObjectStore.init(
+                os.path.join(controldir, OBJECTDIR)
+            )
         ret = cls(path, bare=bare, object_store=object_store)
         ret.refs.set_symbolic_ref(b"HEAD", DEFAULT_REF)
         ret._init_files(bare)
@@ -1599,7 +1615,9 @@ class Repo(BaseRepo):
         return cls._init_maybe_bare(path, controldir, False)
 
     @classmethod
-    def _init_new_working_directory(cls, path, main_repo, identifier=None, mkdir=False):
+    def _init_new_working_directory(
+        cls, path, main_repo, identifier=None, mkdir=False
+    ):
         """Create a new working directory linked to a repository.
 
         Args:
@@ -1648,7 +1666,9 @@ class Repo(BaseRepo):
         """
         if mkdir:
             os.mkdir(path)
-        return cls._init_maybe_bare(path, path, True, object_store=object_store)
+        return cls._init_maybe_bare(
+            path, path, True, object_store=object_store
+        )
 
     create = init_bare
 

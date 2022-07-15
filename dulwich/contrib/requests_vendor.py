@@ -33,19 +33,24 @@ from io import BytesIO
 
 from requests import Session
 
-from dulwich.client import AbstractHttpGitClient, HTTPUnauthorized, HTTPProxyUnauthorized, default_user_agent_string
-from dulwich.errors import NotGitRepository, GitProtocolError
+from dulwich.client import (
+    AbstractHttpGitClient,
+    HTTPProxyUnauthorized,
+    HTTPUnauthorized,
+    default_user_agent_string,
+)
+from dulwich.errors import GitProtocolError, NotGitRepository
 
 
 class RequestsHttpGitClient(AbstractHttpGitClient):
     def __init__(
-            self,
-            base_url,
-            dumb=None,
-            config=None,
-            username=None,
-            password=None,
-            **kwargs
+        self,
+        base_url,
+        dumb=None,
+        config=None,
+        username=None,
+        password=None,
+        **kwargs
     ):
         self._username = username
         self._password = password
@@ -56,9 +61,12 @@ class RequestsHttpGitClient(AbstractHttpGitClient):
             self.session.auth = (username, password)
 
         super(RequestsHttpGitClient, self).__init__(
-            base_url=base_url, dumb=dumb, **kwargs)
+            base_url=base_url, dumb=dumb, **kwargs
+        )
 
-    def _http_request(self, url, headers=None, data=None, allow_compression=False):
+    def _http_request(
+        self, url, headers=None, data=None, allow_compression=False
+    ):
         req_headers = self.session.headers.copy()
         if headers is not None:
             req_headers.update(headers)
@@ -78,7 +86,9 @@ class RequestsHttpGitClient(AbstractHttpGitClient):
         if resp.status_code == 401:
             raise HTTPUnauthorized(resp.headers.get("WWW-Authenticate"), url)
         if resp.status_code == 407:
-            raise HTTPProxyUnauthorized(resp.headers.get("Proxy-Authenticate"), url)
+            raise HTTPProxyUnauthorized(
+                resp.headers.get("Proxy-Authenticate"), url
+            )
         if resp.status_code != 200:
             raise GitProtocolError(
                 "unexpected http resp %d for %s" % (resp.status_code, url)
@@ -138,8 +148,5 @@ def get_session(config):
         session.verify = ssl_verify
 
     if proxy_server:
-        session.proxies.update({
-            "http": proxy_server,
-            "https": proxy_server
-        })
+        session.proxies.update({"http": proxy_server, "https": proxy_server})
     return session

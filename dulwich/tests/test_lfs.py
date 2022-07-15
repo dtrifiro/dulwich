@@ -20,10 +20,11 @@
 
 """Tests for LFS support."""
 
-from . import TestCase
-from ..lfs import LFSStore
 import shutil
 import tempfile
+
+from ..lfs import LFSStore
+from . import TestCase
 
 
 class LFSTests(TestCase):
@@ -39,4 +40,6 @@ class LFSTests(TestCase):
             self.assertEqual(b"ab", f.read())
 
     def test_missing(self):
-        self.assertRaises(KeyError, self.lfs.open_object, "abcdeabcdeabcdeabcde")
+        self.assertRaises(
+            KeyError, self.lfs.open_object, "abcdeabcdeabcdeabcde"
+        )

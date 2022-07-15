@@ -20,7 +20,7 @@
 
 """Object specification."""
 
-from typing import Union, List, Tuple
+from typing import List, Tuple, Union
 
 
 def to_bytes(text):
@@ -125,9 +125,11 @@ def parse_reftuple(lh_container, rh_container, refspec, force=False):
 
 
 def parse_reftuples(
-        lh_container, rh_container,
-        refspecs: Union[bytes, List[bytes], List[Tuple[bytes, bytes]]],
-        force: bool = False):
+    lh_container,
+    rh_container,
+    refspecs: Union[bytes, List[bytes], List[Tuple[bytes, bytes]]],
+    force: bool = False,
+):
     """Parse a list of reftuple specs to a list of reftuples.
 
     Args:
@@ -144,7 +146,9 @@ def parse_reftuples(
     ret = []
     # TODO: Support * in refspecs
     for refspec in refspecs:
-        ret.append(parse_reftuple(lh_container, rh_container, refspec, force=force))
+        ret.append(
+            parse_reftuple(lh_container, rh_container, refspec, force=force)
+        )
     return ret
 
 

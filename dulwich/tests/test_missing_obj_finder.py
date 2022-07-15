@@ -18,18 +18,10 @@
 # License, Version 2.0.
 #
 
-from dulwich.object_store import (
-    MemoryObjectStore,
-)
-from dulwich.objects import (
-    Blob,
-)
+from dulwich.object_store import MemoryObjectStore
+from dulwich.objects import Blob
 from dulwich.tests import TestCase
-from dulwich.tests.utils import (
-    make_object,
-    make_tag,
-    build_commit_graph,
-)
+from dulwich.tests.utils import build_commit_graph, make_object, make_tag
 
 
 class MissingObjectFinderTest(TestCase):
@@ -46,7 +38,7 @@ class MissingObjectFinderTest(TestCase):
             self.assertIn(
                 sha,
                 expected,
-                "(%s,%s) erroneously reported as missing" % (sha, path)
+                "(%s,%s) erroneously reported as missing" % (sha, path),
             )
             expected.remove(sha)
 
@@ -94,13 +86,19 @@ class MOFLinearRepoTest(MissingObjectFinderTest):
         ]
 
     def test_1_to_2(self):
-        self.assertMissingMatch([self.cmt(1).id], [self.cmt(2).id], self.missing_1_2)
+        self.assertMissingMatch(
+            [self.cmt(1).id], [self.cmt(2).id], self.missing_1_2
+        )
 
     def test_2_to_3(self):
-        self.assertMissingMatch([self.cmt(2).id], [self.cmt(3).id], self.missing_2_3)
+        self.assertMissingMatch(
+            [self.cmt(2).id], [self.cmt(3).id], self.missing_2_3
+        )
 
     def test_1_to_3(self):
-        self.assertMissingMatch([self.cmt(1).id], [self.cmt(3).id], self.missing_1_3)
+        self.assertMissingMatch(
+            [self.cmt(1).id], [self.cmt(3).id], self.missing_1_3
+        )
 
     def test_bogus_haves(self):
         """Ensure non-existent SHA in haves are tolerated"""

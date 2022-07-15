@@ -20,19 +20,17 @@
 """Tests for executing hooks."""
 
 import os
-import stat
 import shutil
+import stat
 import sys
 import tempfile
 
 from dulwich import errors
-
 from dulwich.hooks import (
-    PreCommitShellHook,
-    PostCommitShellHook,
     CommitMsgShellHook,
+    PostCommitShellHook,
+    PreCommitShellHook,
 )
-
 from dulwich.tests import TestCase
 
 

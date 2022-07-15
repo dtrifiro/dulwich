@@ -23,16 +23,19 @@
 """Tests for the index."""
 
 
-from io import BytesIO
 import os
 import shutil
 import stat
 import struct
 import sys
 import tempfile
+from io import BytesIO
 
 from dulwich.index import (
     Index,
+    IndexEntry,
+    _fs_to_tree_path,
+    _tree_to_fs_path,
     build_index_from_tree,
     cleanup_mode,
     commit_tree,
@@ -45,24 +48,11 @@ from dulwich.index import (
     write_cache_time,
     write_index,
     write_index_dict,
-    _tree_to_fs_path,
-    _fs_to_tree_path,
-    IndexEntry,
 )
-from dulwich.object_store import (
-    MemoryObjectStore,
-)
-from dulwich.objects import (
-    Blob,
-    Commit,
-    Tree,
-    S_IFGITLINK,
-)
+from dulwich.object_store import MemoryObjectStore
+from dulwich.objects import S_IFGITLINK, Blob, Commit, Tree
 from dulwich.repo import Repo
-from dulwich.tests import (
-    TestCase,
-    skipIf,
-)
+from dulwich.tests import TestCase, skipIf
 
 
 def can_symlink():
@@ -161,7 +151,8 @@ class SimpleIndexWriterTestCase(IndexTestCase):
                     0,
                     b"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
                     0,
-                    0)
+                    0,
+                ),
             )
         ]
         filename = os.path.join(self.tempdir, "test-simple-write-index")
@@ -231,7 +222,9 @@ class CommitTreeTests(TestCase):
         self.assertEqual(dirid, b"c1a1deb9788150829579a8b4efa6311e7b638650")
         self.assertEqual((stat.S_IFDIR, dirid), self.store[rootid][b"bla"])
         self.assertEqual((stat.S_IFREG, blob.id), self.store[dirid][b"bar"])
-        self.assertEqual(set([rootid, dirid, blob.id]), set(self.store._data.keys()))
+        self.assertEqual(
+            set([rootid, dirid, blob.id]), set(self.store._data.keys())
+        )
 
 
 class CleanupModeTests(TestCase):
@@ -325,7 +318,9 @@ class IndexEntryFromStatTests(TestCase):
                 1324180496,
             )
         )
-        entry = index_entry_from_stat(st, "22" * 20, 0, mode=stat.S_IFREG + 0o755)
+        entry = index_entry_from_stat(
+            st, "22" * 20, 0, mode=stat.S_IFREG + 0o755
+        )
         self.assertEqual(
             entry,
             IndexEntry(
@@ -388,7 +383,9 @@ class BuildIndexTests(TestCase):
             tree[b".git/a"] = (stat.S_IFREG | 0o644, filea.id)
             tree[b"c/e"] = (stat.S_IFREG | 0o644, filee.id)
 
-            repo.object_store.add_objects([(o, None) for o in [filea, filee, tree]])
+            repo.object_store.add_objects(
+                [(o, None) for o in [filea, filee, tree]]
+            )
 
             build_index_from_tree(
                 repo.path, repo.index_path(), repo.object_store, tree.id
@@ -462,8 +459,12 @@ class BuildIndexTests(TestCase):
             self.assertFileContents(dpath, b"file d")
 
             # Verify no extra files
-            self.assertEqual([".git", "a", "b", "c"], sorted(os.listdir(repo.path)))
-            self.assertEqual(["d"], sorted(os.listdir(os.path.join(repo.path, "c"))))
+            self.assertEqual(
+                [".git", "a", "b", "c"], sorted(os.listdir(repo.path))
+            )
+            self.assertEqual(
+                ["d"], sorted(os.listdir(os.path.join(repo.path, "c")))
+            )
 
     @skipIf(not getattr(os, "sync", None), "Requires sync support")
     def test_norewrite(self):
@@ -521,7 +522,9 @@ class BuildIndexTests(TestCase):
             tree[b"c/d"] = (stat.S_IFREG | 0o644, filed.id)
             tree[b"c/e"] = (stat.S_IFLNK, filee.id)  # symlink
 
-            repo.object_store.add_objects([(o, None) for o in [filed, filee, tree]])
+            repo.object_store.add_objects(
+                [(o, None) for o in [filed, filee, tree]]
+            )
 
             build_index_from_tree(
                 repo.path, repo.index_path(), repo.object_store, tree.id
@@ -551,9 +554,9 @@ class BuildIndexTests(TestCase):
             file = Blob.from_string(b"foo")
 
             tree = Tree()
-            latin1_name = u"À".encode("latin1")
+            latin1_name = "À".encode("latin1")
             latin1_path = os.path.join(repo_dir_bytes, latin1_name)
-            utf8_name = u"À".encode("utf8")
+            utf8_name = "À".encode("utf8")
             utf8_path = os.path.join(repo_dir_bytes, utf8_name)
             tree[latin1_name] = (stat.S_IFREG | 0o644, file.id)
             tree[utf8_name] = (stat.S_IFREG | 0o644, file.id)
@@ -799,19 +802,19 @@ class TestValidatePathElement(TestCase):
 
 class TestTreeFSPathConversion(TestCase):
     def test_tree_to_fs_path(self):
-        tree_path = u"délwíçh/foo".encode("utf8")
+        tree_path = "délwíçh/foo".encode("utf8")
         fs_path = _tree_to_fs_path(b"/prefix/path", tree_path)
         self.assertEqual(
             fs_path,
-            os.fsencode(os.path.join(u"/prefix/path", u"délwíçh", u"foo")),
+            os.fsencode(os.path.join("/prefix/path", "délwíçh", "foo")),
         )
 
     def test_fs_to_tree_path_str(self):
-        fs_path = os.path.join(os.path.join(u"délwíçh", u"foo"))
+        fs_path = os.path.join(os.path.join("délwíçh", "foo"))
         tree_path = _fs_to_tree_path(fs_path)
-        self.assertEqual(tree_path, u"délwíçh/foo".encode("utf-8"))
+        self.assertEqual(tree_path, "délwíçh/foo".encode("utf-8"))
 
     def test_fs_to_tree_path_bytes(self):
-        fs_path = os.path.join(os.fsencode(os.path.join(u"délwíçh", u"foo")))
+        fs_path = os.path.join(os.fsencode(os.path.join("délwíçh", "foo")))
         tree_path = _fs_to_tree_path(fs_path)
-        self.assertEqual(tree_path, u"délwíçh/foo".encode("utf-8"))
+        self.assertEqual(tree_path, "délwíçh/foo".encode("utf-8"))

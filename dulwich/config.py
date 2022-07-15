@@ -43,7 +43,6 @@ from typing import (
 
 from dulwich.file import GitFile
 
-
 SENTINAL = object()
 
 
@@ -58,7 +57,6 @@ def lower_key(key):
 
 
 class CaseInsensitiveOrderedMultiDict(MutableMapping):
-
     def __init__(self):
         self._real = []
         self._keyed = {}
@@ -161,7 +159,9 @@ class Config(object):
         """
         raise NotImplementedError(self.get)
 
-    def get_multivar(self, section: SectionLike, name: NameLike) -> Iterator[Value]:
+    def get_multivar(
+        self, section: SectionLike, name: NameLike
+    ) -> Iterator[Value]:
         """Retrieve the contents of a multivar configuration setting.
 
         Args:
@@ -175,15 +175,22 @@ class Config(object):
         raise NotImplementedError(self.get_multivar)
 
     @overload
-    def get_boolean(self, section: SectionLike, name: NameLike, default: bool) -> bool:
+    def get_boolean(
+        self, section: SectionLike, name: NameLike, default: bool
+    ) -> bool:
         ...
 
     @overload
-    def get_boolean(self, section: SectionLike, name: NameLike) -> Optional[bool]:
+    def get_boolean(
+        self, section: SectionLike, name: NameLike
+    ) -> Optional[bool]:
         ...
 
     def get_boolean(
-        self, section: SectionLike, name: NameLike, default: Optional[bool] = None
+        self,
+        section: SectionLike,
+        name: NameLike,
+        default: Optional[bool] = None,
     ) -> Optional[bool]:
         """Retrieve a configuration setting as boolean.
 
@@ -208,7 +215,7 @@ class Config(object):
         self,
         section: SectionLike,
         name: NameLike,
-        value: Union[ValueLike, bool]
+        value: Union[ValueLike, bool],
     ) -> None:
         """Set a configuration value.
 
@@ -256,7 +263,7 @@ class ConfigDict(Config, MutableMapping[Section, MutableMapping[Name, Value]]):
         values: Union[
             MutableMapping[Section, MutableMapping[Name, Value]], None
         ] = None,
-        encoding: Union[str, None] = None
+        encoding: Union[str, None] = None,
     ) -> None:
         """Create a new ConfigDict."""
         if encoding is None:
@@ -268,15 +275,15 @@ class ConfigDict(Config, MutableMapping[Section, MutableMapping[Name, Value]]):
         return "%s(%r)" % (self.__class__.__name__, self._values)
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, self.__class__) and other._values == self._values
+        return (
+            isinstance(other, self.__class__) and other._values == self._values
+        )
 
     def __getitem__(self, key: Section) -> MutableMapping[Name, Value]:
         return self._values.__getitem__(key)
 
     def __setitem__(
-        self,
-        key: Section,
-        value: MutableMapping[Name, Value]
+        self, key: Section, value: MutableMapping[Name, Value]
     ) -> None:
         return self._values.__setitem__(key, value)
 
@@ -298,9 +305,7 @@ class ConfigDict(Config, MutableMapping[Section, MutableMapping[Name, Value]]):
             return (parts[0], None, parts[1])
 
     def _check_section_and_name(
-        self,
-        section: SectionLike,
-        name: NameLike
+        self, section: SectionLike, name: NameLike
     ) -> Tuple[Section, Name]:
         if not isinstance(section, tuple):
             section = (section,)
@@ -320,9 +325,7 @@ class ConfigDict(Config, MutableMapping[Section, MutableMapping[Name, Value]]):
         return checked_section, name
 
     def get_multivar(
-        self,
-        section: SectionLike,
-        name: NameLike
+        self, section: SectionLike, name: NameLike
     ) -> Iterator[Value]:
         section, name = self._check_section_and_name(section, name)
 
@@ -366,8 +369,7 @@ class ConfigDict(Config, MutableMapping[Section, MutableMapping[Name, Value]]):
         self._values.setdefault(section)[name] = value
 
     def items(  # type: ignore[override]
-        self,
-        section: Section
+        self, section: Section
     ) -> Iterator[Tuple[Name, Value]]:
         return self._values.get(section).items()
 
@@ -413,7 +415,8 @@ def _parse_string(value: bytes) -> bytes:
                 v = _ESCAPE_TABLE[value[i]]
             except IndexError:
                 raise ValueError(
-                    "escape character in %r at %d before end of string" % (value, i)
+                    "escape character in %r at %d before end of string"
+                    % (value, i)
                 )
             except KeyError:
                 raise ValueError(
@@ -491,7 +494,7 @@ class ConfigFile(ConfigDict):
         values: Union[
             MutableMapping[Section, MutableMapping[Name, Value]], None
         ] = None,
-        encoding: Union[str, None] = None
+        encoding: Union[str, None] = None,
     ) -> None:
         super(ConfigFile, self).__init__(values=values, encoding=encoding)
         self.path: Optional[str] = None
@@ -504,7 +507,7 @@ class ConfigFile(ConfigDict):
         setting = None
         continuation = None
         for lineno, line in enumerate(f.readlines()):
-            if lineno == 0 and line.startswith(b'\xef\xbb\xbf'):
+            if lineno == 0 and line.startswith(b"\xef\xbb\xbf"):
                 line = line[3:]
             line = line.lstrip()
             if setting is None:
@@ -523,11 +526,15 @@ class ConfigFile(ConfigDict):
                         else:
                             pts[1] = pts[1][1:-1]
                         if not _check_section_name(pts[0]):
-                            raise ValueError("invalid section name %r" % pts[0])
+                            raise ValueError(
+                                "invalid section name %r" % pts[0]
+                            )
                         section = (pts[0], pts[1])
                     else:
                         if not _check_section_name(pts[0]):
-                            raise ValueError("invalid section name %r" % pts[0])
+                            raise ValueError(
+                                "invalid section name %r" % pts[0]
+                            )
                         pts = pts[0].split(b".", 1)
                         if len(pts) == 2:
                             section = (pts[0], pts[1])
@@ -590,7 +597,9 @@ class ConfigFile(ConfigDict):
             if subsection_name is None:
                 f.write(b"[" + section_name + b"]\n")
             else:
-                f.write(b"[" + section_name + b' "' + subsection_name + b'"]\n')
+                f.write(
+                    b"[" + section_name + b' "' + subsection_name + b'"]\n'
+                )
             for key, value in values.items():
                 value = _format_string(value)
                 f.write(b"\t" + key + b" = " + value + b"\n")
@@ -705,7 +714,9 @@ class StackedConfig(Config):
                 pass
         raise KeyError(name)
 
-    def get_multivar(self, section: SectionLike, name: NameLike) -> Iterator[Value]:
+    def get_multivar(
+        self, section: SectionLike, name: NameLike
+    ) -> Iterator[Value]:
         if not isinstance(section, tuple):
             section = (section,)
         for backend in self.backends:
@@ -718,7 +729,7 @@ class StackedConfig(Config):
         self,
         section: SectionLike,
         name: NameLike,
-        value: Union[ValueLike, bool]
+        value: Union[ValueLike, bool],
     ) -> None:
         if self.writable is None:
             raise NotImplementedError(self.set)
@@ -733,7 +744,9 @@ class StackedConfig(Config):
                     yield section
 
 
-def parse_submodules(config: ConfigFile) -> Iterator[Tuple[bytes, bytes, bytes]]:
+def parse_submodules(
+    config: ConfigFile,
+) -> Iterator[Tuple[bytes, bytes, bytes]]:
     """Parse a gitmodules GitConfig file, returning submodules.
 
     Args:
@@ -750,11 +763,12 @@ def parse_submodules(config: ConfigFile) -> Iterator[Tuple[bytes, bytes, bytes]]
             yield (sm_path, sm_url, section_name)
 
 
-def iter_instead_of(config: Config, push: bool = False) -> Iterable[Tuple[str, str]]:
-    """Iterate over insteadOf / pushInsteadOf values.
-    """
+def iter_instead_of(
+    config: Config, push: bool = False
+) -> Iterable[Tuple[str, str]]:
+    """Iterate over insteadOf / pushInsteadOf values."""
     for section in config.sections():
-        if section[0] != b'url':
+        if section[0] != b"url":
             continue
         replacement = section[1]
         try:
@@ -768,12 +782,11 @@ def iter_instead_of(config: Config, push: bool = False) -> Iterable[Tuple[str, s
                 pass
         for needle in needles:
             assert isinstance(needle, bytes)
-            yield needle.decode('utf-8'), replacement.decode('utf-8')
+            yield needle.decode("utf-8"), replacement.decode("utf-8")
 
 
 def apply_instead_of(config: Config, orig_url: str, push: bool = False) -> str:
-    """Apply insteadOf / pushInsteadOf to a URL.
-    """
+    """Apply insteadOf / pushInsteadOf to a URL."""
     longest_needle = ""
     updated_url = orig_url
     for needle, replacement in iter_instead_of(config, push):
@@ -781,5 +794,5 @@ def apply_instead_of(config: Config, orig_url: str, push: bool = False) -> str:
             continue
         if len(longest_needle) < len(needle):
             longest_needle = needle
-            updated_url = replacement + orig_url[len(needle):]
+            updated_url = replacement + orig_url[len(needle) :]
     return updated_url

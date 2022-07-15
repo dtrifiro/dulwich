@@ -18,29 +18,14 @@
 # License, Version 2.0.
 #
 
-from io import BytesIO
 import stat
+from io import BytesIO
 
-
-from dulwich.object_store import (
-    MemoryObjectStore,
-)
-from dulwich.objects import (
-    Blob,
-    Commit,
-    Tree,
-    ZERO_SHA,
-)
-from dulwich.repo import (
-    MemoryRepo,
-)
-from dulwich.tests import (
-    SkipTest,
-    TestCase,
-)
-from dulwich.tests.utils import (
-    build_commit_graph,
-)
+from dulwich.object_store import MemoryObjectStore
+from dulwich.objects import ZERO_SHA, Blob, Commit, Tree
+from dulwich.repo import MemoryRepo
+from dulwich.tests import SkipTest, TestCase
+from dulwich.tests.utils import build_commit_graph
 
 
 class GitFastExporterTests(TestCase):
@@ -60,7 +45,9 @@ class GitFastExporterTests(TestCase):
         b = Blob()
         b.data = b"fooBAR"
         self.fastexporter.emit_blob(b)
-        self.assertEqual(b"blob\nmark :1\ndata 6\nfooBAR\n", self.stream.getvalue())
+        self.assertEqual(
+            b"blob\nmark :1\ndata 6\nfooBAR\n", self.stream.getvalue()
+        )
 
     def test_emit_commit(self):
         b = Blob()
@@ -158,7 +145,9 @@ class GitImportProcessorTests(TestCase):
     def test_commit_handler_markers(self):
         from fastimport import commands
 
-        [c1, c2, c3] = build_commit_graph(self.repo.object_store, [[1], [2], [3]])
+        [c1, c2, c3] = build_commit_graph(
+            self.repo.object_store, [[1], [2], [3]]
+        )
         self.processor.markers[b"10"] = c1.id
         self.processor.markers[b"42"] = c2.id
         self.processor.markers[b"98"] = c3.id
@@ -267,7 +256,9 @@ M 100644 :1 a
         from fastimport import commands
 
         self.simple_commit()
-        commit = self.make_file_commit([commands.FileCopyCommand(b"path", b"new_path")])
+        commit = self.make_file_commit(
+            [commands.FileCopyCommand(b"path", b"new_path")]
+        )
         self.assertEqual(
             [
                 (

@@ -61,59 +61,38 @@ to the repository root.
 Functions should generally accept both unicode strings and bytestrings
 """
 
-from collections import namedtuple
-from contextlib import (
-    closing,
-    contextmanager,
-)
-from io import BytesIO, RawIOBase
 import datetime
 import os
-from pathlib import Path
 import posixpath
 import stat
 import sys
 import time
-from typing import (
-    Optional,
-    Tuple,
-    Union,
-)
+from collections import namedtuple
+from contextlib import closing, contextmanager
+from io import BytesIO, RawIOBase
+from typing import Optional, Tuple, Union
 
-from dulwich.archive import (
-    tar_stream,
-)
-from dulwich.client import (
-    get_transport_and_path,
-)
-from dulwich.config import (
-    ConfigFile,
-    StackedConfig,
-)
+from dulwich.archive import tar_stream
+from dulwich.client import get_transport_and_path
+from dulwich.config import ConfigFile, StackedConfig
 from dulwich.diff_tree import (
     CHANGE_ADD,
+    CHANGE_COPY,
     CHANGE_DELETE,
     CHANGE_MODIFY,
     CHANGE_RENAME,
-    CHANGE_COPY,
     RENAME_CHANGE_TYPES,
 )
-from dulwich.errors import (
-    SendPackError,
-)
-from dulwich.graph import (
-    can_fast_forward,
-)
+from dulwich.errors import SendPackError
+from dulwich.graph import can_fast_forward
 from dulwich.ignore import IgnoreFilterManager
 from dulwich.index import (
-    blob_from_path_and_stat,
-    get_unstaged_changes,
-    build_file_from_blob,
     _fs_to_tree_path,
+    blob_from_path_and_stat,
+    build_file_from_blob,
+    get_unstaged_changes,
 )
-from dulwich.object_store import (
-    tree_lookup_path,
-)
+from dulwich.object_store import tree_lookup_path
 from dulwich.objects import (
     Commit,
     Tag,
@@ -128,15 +107,9 @@ from dulwich.objectspec import (
     parse_reftuples,
     parse_tree,
 )
-from dulwich.pack import (
-    write_pack_index,
-    write_pack_objects,
-)
+from dulwich.pack import write_pack_index, write_pack_objects
 from dulwich.patch import write_tree_diff
-from dulwich.protocol import (
-    Protocol,
-    ZERO_SHA,
-)
+from dulwich.protocol import ZERO_SHA, Protocol
 from dulwich.refs import (
     LOCAL_BRANCH_PREFIX,
     LOCAL_TAG_PREFIX,
@@ -145,12 +118,11 @@ from dulwich.refs import (
 from dulwich.repo import BaseRepo, Repo
 from dulwich.server import (
     FileSystemBackend,
-    TCPGitServer,
     ReceivePackHandler,
+    TCPGitServer,
     UploadPackHandler,
-    update_server_info as server_update_server_info,
 )
-
+from dulwich.server import update_server_info as server_update_server_info
 
 # Module level tuple definition for status output
 GitStatus = namedtuple("GitStatus", "staged unstaged untracked")
@@ -180,7 +152,7 @@ DEFAULT_ENCODING = "utf-8"
 
 
 class Error(Exception):
-    """Porcelain-based error. """
+    """Porcelain-based error."""
 
     def __init__(self, msg, inner=None):
         super(Error, self).__init__(msg)
@@ -228,8 +200,7 @@ def path_to_tree_path(repopath, path, tree_encoding=DEFAULT_ENCODING):
     if sys.platform == "win32":
         path = os.path.abspath(path)
 
-    path = Path(path)
-    resolved_path = path.resolve()
+    resolved_path = os.path.realpath(path)
 
     # Resolve and abspath seems to behave differently regarding symlinks,
     # as we are doing abspath on the file path, we need to do the same on
@@ -237,22 +208,24 @@ def path_to_tree_path(repopath, path, tree_encoding=DEFAULT_ENCODING):
     if sys.platform == "win32":
         repopath = os.path.abspath(repopath)
 
-    repopath = Path(repopath).resolve()
+    repopath = os.path.realpath(repopath)
 
-    try:
-        relpath = resolved_path.relative_to(repopath)
-    except ValueError:
+    if not resolved_path.startswith(repopath):
         # If path is a symlink that points to a file outside the repo, we
         # want the relpath for the link itself, not the resolved target
-        if path.is_symlink():
-            parent = path.parent.resolve()
-            relpath = (parent / path.name).relative_to(repopath)
-        else:
-            raise
-    if sys.platform == "win32":
-        return str(relpath).replace(os.path.sep, "/").encode(tree_encoding)
+        if not os.path.islink(path):
+            raise ValueError(resolved_path)
+
+        parent = os.path.realpath(os.path.basename(os.path.normpath(path)))
+        relpath = os.path.relpath(
+            os.path.join(parent, os.path.basename(path)), repopath
+        )
     else:
-        return bytes(relpath)
+        relpath = os.path.relpath(resolved_path, repopath)
+
+    if sys.platform == "win32":
+        return relpath.replace(os.path.sep, "/").encode(tree_encoding)
+    return os.fsencode(relpath)
 
 
 class DivergedBranches(Error):
@@ -469,12 +442,12 @@ def add(repo=".", paths=None):
     """
     ignored = set()
     with open_repo_closing(repo) as r:
-        repo_path = Path(r.path).resolve()
+        repo_path = os.path.realpath(r.path)
         ignore_manager = IgnoreFilterManager.from_repo(r)
         if not paths:
             paths = list(
                 get_untracked_paths(
-                    str(Path(os.getcwd()).resolve()),
+                    os.getcwd(),
                     str(repo_path),
                     r.open_index(),
                 )
@@ -483,10 +456,12 @@ def add(repo=".", paths=None):
         if not isinstance(paths, list):
             paths = [paths]
         for p in paths:
-            path = Path(p)
-            relpath = str(path.resolve().relative_to(repo_path))
+            resolved_path = os.path.realpath(p)
+            if not resolved_path.startswith(repo_path):
+                raise ValueError("Not in repository: " + str(p))
+            relpath = os.path.relpath(os.path.realpath(p), repo_path)
             # FIXME: Support patterns
-            if path.is_dir():
+            if os.path.isdir(p):
                 relpath = os.path.join(relpath, "")
             if ignore_manager.is_ignored(relpath):
                 ignored.add(relpath)
@@ -785,7 +760,9 @@ def log(
       max_entries: Optional maximum number of entries to display
     """
     with open_repo_closing(repo) as r:
-        walker = r.get_walker(max_entries=max_entries, paths=paths, reverse=reverse)
+        walker = r.get_walker(
+            max_entries=max_entries, paths=paths, reverse=reverse
+        )
         for entry in walker:
 
             def decode(x):
@@ -794,7 +771,10 @@ def log(
             print_commit(entry.commit, decode, outstream)
             if name_status:
                 outstream.writelines(
-                    [line + "\n" for line in print_name_status(entry.changes())]
+                    [
+                        line + "\n"
+                        for line in print_name_status(entry.changes())
+                    ]
                 )
 
 
@@ -861,8 +841,8 @@ def rev_list(repo, commits, outstream=sys.stdout):
 
 
 def _canonical_part(url: str) -> str:
-    name = url.rsplit('/', 1)[-1]
-    if name.endswith('.git'):
+    name = url.rsplit("/", 1)[-1]
+    if name.endswith(".git"):
         name = name[:-4]
     return name
 
@@ -900,8 +880,11 @@ def submodule_list(repo):
       repo: Path to repository
     """
     from .submodule import iter_cached_submodules
+
     with open_repo_closing(repo) as r:
-        for path, sha in iter_cached_submodules(r.object_store, r[r.head()].tree):
+        for path, sha in iter_cached_submodules(
+            r.object_store, r[r.head()].tree
+        ):
             yield path.decode(DEFAULT_ENCODING), sha.decode(DEFAULT_ENCODING)
 
 
@@ -1071,7 +1054,9 @@ def push(
         remote_changed_refs = {}
 
         def update_refs(refs):
-            selected_refs.extend(parse_reftuples(r.refs, refs, refspecs, force=force))
+            selected_refs.extend(
+                parse_reftuples(r.refs, refs, refspecs, force=force)
+            )
             new_refs = {}
             # TODO: Handle selected_refs == {None: None}
             for (lh, rh, force_ref) in selected_refs:
@@ -1100,18 +1085,24 @@ def push(
             )
         except SendPackError as e:
             raise Error(
-                "Push to " + remote_location + " failed -> " + e.args[0].decode(),
+                "Push to "
+                + remote_location
+                + " failed -> "
+                + e.args[0].decode(),
                 inner=e,
             )
         else:
             errstream.write(
-                b"Push to " + remote_location.encode(err_encoding) + b" successful.\n"
+                b"Push to "
+                + remote_location.encode(err_encoding)
+                + b" successful.\n"
             )
 
         for ref, error in (result.ref_status or {}).items():
             if error is not None:
                 errstream.write(
-                    b"Push of ref %s failed: %s\n" % (ref, error.encode(err_encoding))
+                    b"Push of ref %s failed: %s\n"
+                    % (ref, error.encode(err_encoding))
                 )
             else:
                 errstream.write(b"Ref %s updated\n" % ref)
@@ -1166,7 +1157,9 @@ def pull(
         for (lh, rh, force_ref) in selected_refs:
             if not force_ref and rh in r.refs:
                 try:
-                    check_diverged(r, r.refs.follow(rh)[1], fetch_result.refs[lh])
+                    check_diverged(
+                        r, r.refs.follow(rh)[1], fetch_result.refs[lh]
+                    )
                 except DivergedBranches:
                     if fast_forward:
                         raise
@@ -1192,7 +1185,7 @@ def status(repo=".", ignored=False, untracked_files="all"):
       untracked_files: How to handle untracked files, defaults to "all":
           "no": do not return untracked files
           "all": include all files in untracked directories
-        Using `untracked_files="no"` can be faster than "all" when the worktreee
+        Using `untracked_files="no"` can be faster than "all" when the worktree
           contains many untracked files/directories.
 
     Note: `untracked_files="normal" (`git`'s default) is not implemented.
@@ -1209,7 +1202,9 @@ def status(repo=".", ignored=False, untracked_files="all"):
         index = r.open_index()
         normalizer = r.get_blob_normalizer()
         filter_callback = normalizer.checkin_normalize
-        unstaged_changes = list(get_unstaged_changes(index, r.path, filter_callback))
+        unstaged_changes = list(
+            get_unstaged_changes(index, r.path, filter_callback)
+        )
 
         untracked_paths = get_untracked_paths(
             r.path,
@@ -1377,10 +1372,10 @@ def web_daemon(path=".", address=None, port=None):
       port: Optional port to listen on (defaults to 80)
     """
     from dulwich.web import (
-        make_wsgi_chain,
-        make_server,
         WSGIRequestHandlerLogger,
         WSGIServerLogger,
+        make_server,
+        make_wsgi_chain,
     )
 
     backend = FileSystemBackend(path)
@@ -1489,7 +1484,9 @@ def branch_create(repo, name, objectish=None, force=False):
             objectish = "HEAD"
         object = parse_object(r, objectish)
         refname = _make_branch_ref(name)
-        ref_message = b"branch: Created from " + objectish.encode(DEFAULT_ENCODING)
+        ref_message = b"branch: Created from " + objectish.encode(
+            DEFAULT_ENCODING
+        )
         if force:
             r.refs.set_if_equals(refname, None, object.id, message=ref_message)
         else:
@@ -1574,11 +1571,15 @@ def fetch(
     with open_repo_closing(repo) as r:
         (remote_name, remote_location) = get_remote_repo(r, remote_location)
         if message is None:
-            message = b"fetch: from " + remote_location.encode(DEFAULT_ENCODING)
+            message = b"fetch: from " + remote_location.encode(
+                DEFAULT_ENCODING
+            )
         client, path = get_transport_and_path(
             remote_location, config=r.get_config_stack(), **kwargs
         )
-        fetch_result = client.fetch(path, r, progress=errstream.write, depth=depth)
+        fetch_result = client.fetch(
+            path, r, progress=errstream.write, depth=depth
+        )
         if remote_name is not None:
             _import_remote_refs(
                 r.refs,
@@ -1757,7 +1758,7 @@ def update_head(repo, target, detached=False, new_branch=None):
             r.refs.set_symbolic_ref(b"HEAD", to_set)
 
 
-def reset_file(repo, file_path: str, target: bytes = b'HEAD'):
+def reset_file(repo, file_path: str, target: bytes = b"HEAD"):
     """Reset the file to specific commit or branch.
 
     Args:
@@ -1878,10 +1879,10 @@ def describe(repo):
         for key, value in refs.items():
             key = key.decode()
             obj = r.get_object(value)
-            if u"tags" not in key:
+            if "tags" not in key:
                 continue
 
-            _, tag = key.rsplit(u"/", 1)
+            _, tag = key.rsplit("/", 1)
 
             try:
                 commit = obj.object
@@ -1894,11 +1895,15 @@ def describe(repo):
                 commit.id.decode("ascii"),
             ]
 
-        sorted_tags = sorted(tags.items(), key=lambda tag: tag[1][0], reverse=True)
+        sorted_tags = sorted(
+            tags.items(), key=lambda tag: tag[1][0], reverse=True
+        )
 
         # If there are no tags, return the current commit
         if len(sorted_tags) == 0:
-            return "g{}".format(find_unique_abbrev(r.object_store, r[r.head()].id))
+            return "g{}".format(
+                find_unique_abbrev(r.object_store, r[r.head()].id)
+            )
 
         # We're now 0 commits from the top
         commit_count = 0
@@ -1947,7 +1952,9 @@ def get_object_by_path(repo, path, committish=None):
         base_tree = commit.tree
         if not isinstance(path, bytes):
             path = commit_encode(commit, path)
-        (mode, sha) = tree_lookup_path(r.object_store.__getitem__, base_tree, path)
+        (mode, sha) = tree_lookup_path(
+            r.object_store.__getitem__, base_tree, path
+        )
         return r[sha]
 
 

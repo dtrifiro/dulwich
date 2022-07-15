@@ -22,15 +22,8 @@
 
 from io import BytesIO, StringIO
 
-from dulwich.objects import (
-    Blob,
-    Commit,
-    S_IFGITLINK,
-    Tree,
-)
-from dulwich.object_store import (
-    MemoryObjectStore,
-)
+from dulwich.object_store import MemoryObjectStore
+from dulwich.objects import S_IFGITLINK, Blob, Commit, Tree
 from dulwich.patch import (
     get_summary,
     git_am_patch_split,
@@ -39,10 +32,7 @@ from dulwich.patch import (
     write_object_diff,
     write_tree_diff,
 )
-from dulwich.tests import (
-    SkipTest,
-    TestCase,
-)
+from dulwich.tests import SkipTest, TestCase
 
 
 class WriteCommitPatchTests(TestCase):
@@ -58,7 +48,9 @@ class WriteCommitPatchTests(TestCase):
         f.seek(0)
         lines = f.readlines()
         self.assertTrue(
-            lines[0].startswith(b"From 0b0d34d1b5b596c928adc9a727a4b9e03d025298")
+            lines[0].startswith(
+                b"From 0b0d34d1b5b596c928adc9a727a4b9e03d025298"
+            )
         )
         self.assertEqual(lines[1], b"From: Jelmer <jelmer@samba.org>\n")
         self.assertTrue(lines[2].startswith(b"Date: "))
@@ -94,7 +86,9 @@ Subject: [PATCH 1/2] Remove executable bit from prey.ico (triggers a warning).
 -- 
 1.7.0.4
 """
-        c, diff, version = git_am_patch_split(StringIO(text.decode("utf-8")), "utf-8")
+        c, diff, version = git_am_patch_split(
+            StringIO(text.decode("utf-8")), "utf-8"
+        )
         self.assertEqual(b"Jelmer Vernooij <jelmer@samba.org>", c.committer)
         self.assertEqual(b"Jelmer Vernooij <jelmer@samba.org>", c.author)
         self.assertEqual(
@@ -227,7 +221,8 @@ From: Jelmer Vernooij <jelmer@debian.org>
 
     def test_extract_mercurial(self):
         raise SkipTest(
-            "git_am_patch_split doesn't handle Mercurial patches " "properly yet"
+            "git_am_patch_split doesn't handle Mercurial patches "
+            "properly yet"
         )
         expected_diff = """\
 diff --git a/dulwich/tests/test_patch.py b/dulwich/tests/test_patch.py
@@ -454,7 +449,9 @@ class DiffTests(TestCase):
         store = MemoryObjectStore()
         b2 = Blob.from_string(b"new\nsame\n")
         store.add_object(b2)
-        write_object_diff(f, store, (None, None, None), (b"bar.txt", 0o644, b2.id))
+        write_object_diff(
+            f, store, (None, None, None), (b"bar.txt", 0o644, b2.id)
+        )
         self.assertEqual(
             [
                 b"diff --git a/bar.txt b/bar.txt",
@@ -474,7 +471,9 @@ class DiffTests(TestCase):
         b1 = Blob.from_string(b"new\nsame\n")
         store = MemoryObjectStore()
         store.add_object(b1)
-        write_object_diff(f, store, (b"bar.txt", 0o644, b1.id), (None, None, None))
+        write_object_diff(
+            f, store, (b"bar.txt", 0o644, b1.id), (None, None, None)
+        )
         self.assertEqual(
             [
                 b"diff --git a/bar.txt b/bar.txt",
@@ -572,7 +571,9 @@ class DiffTests(TestCase):
         )
         store = MemoryObjectStore()
         store.add_object(b2)
-        write_object_diff(f, store, (None, None, None), (b"bar.png", 0o644, b2.id))
+        write_object_diff(
+            f, store, (None, None, None), (b"bar.png", 0o644, b2.id)
+        )
         self.assertEqual(
             [
                 b"diff --git a/bar.png b/bar.png",
@@ -593,7 +594,9 @@ class DiffTests(TestCase):
         )
         store = MemoryObjectStore()
         store.add_object(b1)
-        write_object_diff(f, store, (b"foo.png", 0o644, b1.id), (None, None, None))
+        write_object_diff(
+            f, store, (b"foo.png", 0o644, b1.id), (None, None, None)
+        )
         self.assertEqual(
             [
                 b"diff --git a/foo.png b/foo.png",

@@ -34,22 +34,16 @@ DULWICH_SWIFT_CFG=/tmp/conf.cfg PYTHONPATH=. python -m unittest \
 """
 
 import os
-import unittest
-import tempfile
 import shutil
+import tempfile
+import unittest
 
 import gevent
 from gevent import monkey
 
 monkey.patch_all()
 
-from dulwich import (  # noqa:E402
-    server,
-    repo,
-    index,
-    client,
-    objects,
-)
+from dulwich import client, index, objects, repo, server  # noqa:E402
 from dulwich.contrib import swift  # noqa:E402
 
 
@@ -61,7 +55,9 @@ class DulwichServer:
         self.backend = backend
 
     def run(self):
-        self.server = server.TCPGitServer(self.backend, "localhost", port=self.port)
+        self.server = server.TCPGitServer(
+            self.backend, "localhost", port=self.port
+        )
         self.job = gevent.spawn(self.server.serve_forever)
 
     def stop(self):
@@ -114,7 +110,9 @@ class SwiftRepoSmokeTest(unittest.TestCase):
         self.assertTrue(self.scon.test_root_exists())
         obj = self.scon.get_container_objects()
         filtered = [
-            o for o in obj if o["name"] == "info/refs" or o["name"] == "objects/pack"
+            o
+            for o in obj
+            if o["name"] == "info/refs" or o["name"] == "objects/pack"
         ]
         self.assertEqual(len(filtered), 2)
 
@@ -145,11 +143,15 @@ class SwiftRepoSmokeTest(unittest.TestCase):
 
     def test_push_branch(self):
         def determine_wants(*args, **kwargs):
-            return {"refs/heads/mybranch": local_repo.refs["refs/heads/mybranch"]}
+            return {
+                "refs/heads/mybranch": local_repo.refs["refs/heads/mybranch"]
+            }
 
         local_repo = repo.Repo.init(self.temp_d, mkdir=True)
         # Nothing in the staging area
-        local_repo.do_commit("Test commit", "fbo@localhost", ref="refs/heads/mybranch")
+        local_repo.do_commit(
+            "Test commit", "fbo@localhost", ref="refs/heads/mybranch"
+        )
         sha = local_repo.refs.read_loose_ref("refs/heads/mybranch")
         swift.SwiftRepo.init_bare(self.scon, self.conf)
         tcp_client = client.TCPGitClient(self.server_address, port=self.port)
@@ -165,7 +167,9 @@ class SwiftRepoSmokeTest(unittest.TestCase):
             return {
                 "refs/heads/mybranch": local_repo.refs["refs/heads/mybranch"],
                 "refs/heads/master": local_repo.refs["refs/heads/master"],
-                "refs/heads/pullr-108": local_repo.refs["refs/heads/pullr-108"],
+                "refs/heads/pullr-108": local_repo.refs[
+                    "refs/heads/pullr-108"
+                ],
             }
 
         local_repo = repo.Repo.init(self.temp_d, mkdir=True)
@@ -202,7 +206,9 @@ class SwiftRepoSmokeTest(unittest.TestCase):
             open(os.path.join(self.temp_d, f), "w").write("DATA %s" % i)
             i += 1
         local_repo.stage(files)
-        local_repo.do_commit("Test commit", "fbo@localhost", ref="refs/heads/master")
+        local_repo.do_commit(
+            "Test commit", "fbo@localhost", ref="refs/heads/master"
+        )
         swift.SwiftRepo.init_bare(self.scon, self.conf)
         tcp_client = client.TCPGitClient(self.server_address, port=self.port)
         tcp_client.send_pack(
@@ -253,7 +259,9 @@ class SwiftRepoSmokeTest(unittest.TestCase):
             open(os.path.join(self.temp_d, f), "w").write("DATA %s" % i)
             i += 1
         local_repo.stage(files)
-        local_repo.do_commit("Test commit", "fbo@localhost", ref="refs/heads/master")
+        local_repo.do_commit(
+            "Test commit", "fbo@localhost", ref="refs/heads/master"
+        )
         tcp_client.send_pack(
             "/fakerepo", determine_wants, local_repo.generate_pack_data
         )

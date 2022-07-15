@@ -32,20 +32,21 @@ import tempfile
 import time
 from typing import Tuple
 
-from dulwich.repo import Repo
 from dulwich.protocol import TCP_GIT_PORT
-
-from dulwich.tests import (
-    SkipTest,
-    TestCase,
-)
+from dulwich.repo import Repo
+from dulwich.tests import SkipTest, TestCase
 
 _DEFAULT_GIT = "git"
 _VERSION_LEN = 4
 _REPOS_DATA_DIR = os.path.abspath(
     os.path.join(
-        os.path.dirname(__file__), os.pardir, os.pardir, os.pardir,
-        "testdata", "repos")
+        os.path.dirname(__file__),
+        os.pardir,
+        os.pardir,
+        os.pardir,
+        "testdata",
+        "repos",
+    )
 )
 
 
@@ -94,7 +95,8 @@ def require_git_version(required_version, git_path=_DEFAULT_GIT):
     found_version = git_version(git_path=git_path)
     if found_version is None:
         raise SkipTest(
-            "Test requires git >= %s, but c git not found" % (required_version,)
+            "Test requires git >= %s, but c git not found"
+            % (required_version,)
         )
 
     if len(required_version) > _VERSION_LEN:
@@ -112,12 +114,17 @@ def require_git_version(required_version, git_path=_DEFAULT_GIT):
         required_version = ".".join(map(str, required_version))
         found_version = ".".join(map(str, found_version))
         raise SkipTest(
-            "Test requires git >= %s, found %s" % (required_version, found_version)
+            "Test requires git >= %s, found %s"
+            % (required_version, found_version)
         )
 
 
 def run_git(
-    args, git_path=_DEFAULT_GIT, input=None, capture_stdout=False, **popen_kwargs
+    args,
+    git_path=_DEFAULT_GIT,
+    input=None,
+    capture_stdout=False,
+    **popen_kwargs
 ):
     """Run a git command.
 
@@ -157,7 +164,11 @@ def run_git_or_fail(args, git_path=_DEFAULT_GIT, input=None, **popen_kwargs):
     if "stderr" not in popen_kwargs:
         popen_kwargs["stderr"] = subprocess.STDOUT
     returncode, stdout = run_git(
-        args, git_path=git_path, input=input, capture_stdout=True, **popen_kwargs
+        args,
+        git_path=git_path,
+        input=input,
+        capture_stdout=True,
+        **popen_kwargs
     )
     if returncode != 0:
         raise AssertionError(
@@ -182,7 +193,9 @@ def import_repo_to_dir(name):
     temp_repo_dir = os.path.join(temp_dir, name)
     export_file = open(export_path, "rb")
     run_git_or_fail(["init", "--quiet", "--bare", temp_repo_dir])
-    run_git_or_fail(["fast-import"], input=export_file.read(), cwd=temp_repo_dir)
+    run_git_or_fail(
+        ["fast-import"], input=export_file.read(), cwd=temp_repo_dir
+    )
     export_file.close()
     return temp_repo_dir
 

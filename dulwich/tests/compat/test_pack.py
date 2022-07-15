@@ -27,24 +27,11 @@ import re
 import shutil
 import tempfile
 
-from dulwich.pack import (
-    write_pack,
-)
-from dulwich.objects import (
-    Blob,
-)
-from dulwich.tests import (
-    SkipTest,
-)
-from dulwich.tests.test_pack import (
-    a_sha,
-    pack1_sha,
-    PackTests,
-)
-from dulwich.tests.compat.utils import (
-    require_git_version,
-    run_git_or_fail,
-)
+from dulwich.objects import Blob
+from dulwich.pack import write_pack
+from dulwich.tests import SkipTest
+from dulwich.tests.compat.utils import require_git_version, run_git_or_fail
+from dulwich.tests.test_pack import PackTests, a_sha, pack1_sha
 
 _NON_DELTA_RE = re.compile(b"non delta: (?P<non_delta>\\d+) objects")
 
@@ -108,7 +95,7 @@ class TestPack(PackTests):
         with self.get_pack(pack1_sha) as orig_pack:
             orig_blob = orig_pack[a_sha]
             new_blob = Blob()
-            new_blob.data = orig_blob.data + (b"x" * 2 ** 20)
+            new_blob.data = orig_blob.data + (b"x" * 2**20)
             new_blob_2 = Blob()
             new_blob_2.data = new_blob.data + b"y"
             all_to_pack = list(orig_pack.pack_tuples()) + [
@@ -147,7 +134,7 @@ class TestPack(PackTests):
         raise SkipTest("skipping slow, large test")
         with self.get_pack(pack1_sha) as orig_pack:
             new_blob = Blob()
-            new_blob.data = "big blob" + ("x" * 2 ** 25)
+            new_blob.data = "big blob" + ("x" * 2**25)
             new_blob_2 = Blob()
             new_blob_2.data = new_blob.data + "y"
             all_to_pack = list(orig_pack.pack_tuples()) + [

@@ -22,28 +22,15 @@
 
 """Tests for dulwich.contrib.swift."""
 
+import json
 import posixpath
-
-from time import time
 from io import BytesIO, StringIO
-
+from time import time
 from unittest import skipIf
 
-from dulwich.tests import (
-    TestCase,
-)
-from dulwich.tests.test_object_store import (
-    ObjectStoreTests,
-)
-from dulwich.objects import (
-    Blob,
-    Commit,
-    Tree,
-    Tag,
-    parse_timezone,
-)
-
-import json
+from dulwich.objects import Blob, Commit, Tag, Tree, parse_timezone
+from dulwich.tests import TestCase
+from dulwich.tests.test_object_store import ObjectStoreTests
 
 missing_libs = []
 
@@ -247,7 +234,9 @@ class FakeSwiftConnector(object):
 class TestSwiftRepo(TestCase):
     def setUp(self):
         super(TestSwiftRepo, self).setUp()
-        self.conf = swift.load_conf(file=StringIO(config_file % def_config_file))
+        self.conf = swift.load_conf(
+            file=StringIO(config_file % def_config_file)
+        )
 
     def test_init(self):
         store = {"fakerepo/objects/pack": ""}
@@ -263,7 +252,9 @@ class TestSwiftRepo(TestCase):
             "dulwich.contrib.swift.SwiftConnector",
             new_callable=create_swift_connector,
         ):
-            self.assertRaises(Exception, swift.SwiftRepo, "fakerepo", self.conf)
+            self.assertRaises(
+                Exception, swift.SwiftRepo, "fakerepo", self.conf
+            )
 
     def test_init_bad_data(self):
         store = {"fakerepo/.git/objects/pack": ""}
@@ -272,7 +263,9 @@ class TestSwiftRepo(TestCase):
             new_callable=create_swift_connector,
             store=store,
         ):
-            self.assertRaises(Exception, swift.SwiftRepo, "fakerepo", self.conf)
+            self.assertRaises(
+                Exception, swift.SwiftRepo, "fakerepo", self.conf
+            )
 
     def test_put_named_file(self):
         store = {"fakerepo/objects/pack": ""}
@@ -308,7 +301,9 @@ class TestSwiftInfoRefsContainer(TestCase):
             b"cca703b0e1399008b53a1a236d6b4584737649e4\trefs/heads/dev"
         )
         self.store = {"fakerepo/info/refs": content}
-        self.conf = swift.load_conf(file=StringIO(config_file % def_config_file))
+        self.conf = swift.load_conf(
+            file=StringIO(config_file % def_config_file)
+        )
         self.fsc = FakeSwiftConnector("fakerepo", conf=self.conf)
         self.object_store = {}
 
@@ -344,8 +339,12 @@ class TestSwiftInfoRefsContainer(TestCase):
 class TestSwiftConnector(TestCase):
     def setUp(self):
         super(TestSwiftConnector, self).setUp()
-        self.conf = swift.load_conf(file=StringIO(config_file % def_config_file))
-        with patch("geventhttpclient.HTTPClient.request", fake_auth_request_v1):
+        self.conf = swift.load_conf(
+            file=StringIO(config_file % def_config_file)
+        )
+        with patch(
+            "geventhttpclient.HTTPClient.request", fake_auth_request_v1
+        ):
             self.conn = swift.SwiftConnector("fakerepo", conf=self.conf)
 
     def test_init_connector(self):
@@ -363,20 +362,26 @@ class TestSwiftConnector(TestCase):
         self.assertEqual(self.conn.concurrency, 1)
         self.conf.set("swift", "auth_ver", "2")
         self.conf.set("swift", "auth_url", "http://127.0.0.1:8080/auth/v2.0")
-        with patch("geventhttpclient.HTTPClient.request", fake_auth_request_v2):
+        with patch(
+            "geventhttpclient.HTTPClient.request", fake_auth_request_v2
+        ):
             conn = swift.SwiftConnector("fakerepo", conf=self.conf)
         self.assertEqual(conn.user, "tester")
         self.assertEqual(conn.tenant, "test")
         self.conf.set("swift", "auth_ver", "1")
         self.conf.set("swift", "auth_url", "http://127.0.0.1:8080/auth/v1.0")
-        with patch("geventhttpclient.HTTPClient.request", fake_auth_request_v1_error):
+        with patch(
+            "geventhttpclient.HTTPClient.request", fake_auth_request_v1_error
+        ):
             self.assertRaises(
                 swift.SwiftException,
                 lambda: swift.SwiftConnector("fakerepo", conf=self.conf),
             )
 
     def test_root_exists(self):
-        with patch("geventhttpclient.HTTPClient.request", lambda *args: Response()):
+        with patch(
+            "geventhttpclient.HTTPClient.request", lambda *args: Response()
+        ):
             self.assertEqual(self.conn.test_root_exists(), True)
 
     def test_root_not_exists(self):
@@ -391,7 +396,9 @@ class TestSwiftConnector(TestCase):
             "dulwich.contrib.swift.SwiftConnector.test_root_exists",
             lambda *args: None,
         ):
-            with patch("geventhttpclient.HTTPClient.request", lambda *args: Response()):
+            with patch(
+                "geventhttpclient.HTTPClient.request", lambda *args: Response()
+            ):
                 self.assertEqual(self.conn.create_root(), None)
 
     def test_create_root_fails(self):
@@ -426,7 +433,9 @@ class TestSwiftConnector(TestCase):
             "geventhttpclient.HTTPClient.request",
             lambda *args: Response(headers={"content-length": "10"}),
         ):
-            self.assertEqual(self.conn.get_object_stat("a")["content-length"], "10")
+            self.assertEqual(
+                self.conn.get_object_stat("a")["content-length"], "10"
+            )
 
     def test_get_object_stat_fails(self):
         with patch(
@@ -440,7 +449,9 @@ class TestSwiftConnector(TestCase):
             "geventhttpclient.HTTPClient.request",
             lambda *args, **kwargs: Response(),
         ):
-            self.assertEqual(self.conn.put_object("a", BytesIO(b"content")), None)
+            self.assertEqual(
+                self.conn.put_object("a", BytesIO(b"content")), None
+            )
 
     def test_put_object_fails(self):
         with patch(
@@ -462,7 +473,9 @@ class TestSwiftConnector(TestCase):
             "geventhttpclient.HTTPClient.request",
             lambda *args, **kwargs: Response(content=b"content"),
         ):
-            self.assertEqual(self.conn.get_object("a", range="0-6"), b"content")
+            self.assertEqual(
+                self.conn.get_object("a", range="0-6"), b"content"
+            )
 
     def test_get_object_fails(self):
         with patch(
@@ -472,7 +485,9 @@ class TestSwiftConnector(TestCase):
             self.assertEqual(self.conn.get_object("a"), None)
 
     def test_del_object(self):
-        with patch("geventhttpclient.HTTPClient.request", lambda *args: Response()):
+        with patch(
+            "geventhttpclient.HTTPClient.request", lambda *args: Response()
+        ):
             self.assertEqual(self.conn.del_object("a"), None)
 
     def test_del_root(self):
@@ -481,7 +496,8 @@ class TestSwiftConnector(TestCase):
             lambda *args: None,
         ):
             with patch(
-                "dulwich.contrib.swift.SwiftConnector." "get_container_objects",
+                "dulwich.contrib.swift.SwiftConnector."
+                "get_container_objects",
                 lambda *args: ({"name": "a"}, {"name": "b"}),
             ):
                 with patch(

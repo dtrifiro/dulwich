@@ -33,13 +33,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import sys
 import re
+import sys
 
 # only needs to detect git style diffs as this is for
 # use with dulwich
 
-_git_header_name = re.compile(br"diff --git a/(.*) b/(.*)")
+_git_header_name = re.compile(rb"diff --git a/(.*) b/(.*)")
 
 _GIT_HEADER_START = b"diff --git a/"
 _GIT_BINARY_START = b"Binary file"
@@ -86,7 +86,9 @@ def _parse_patch(lines):
             currentfile = line[12:]
         elif line.startswith(_GIT_RENAMETO_START) and in_git_header:
             currentfile += b" => %s" % line[10:]
-        elif line.startswith(_GIT_CHUNK_START) and (in_patch_chunk or in_git_header):
+        elif line.startswith(_GIT_CHUNK_START) and (
+            in_patch_chunk or in_git_header
+        ):
             in_patch_chunk = True
             in_git_header = False
         elif line.startswith(_GIT_ADDED_START) and in_patch_chunk:

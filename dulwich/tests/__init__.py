@@ -21,11 +21,11 @@
 """Tests for Dulwich."""
 
 __all__ = [
-    'SkipTest',
-    'TestCase',
-    'BlackboxTestCase',
-    'skipIf',
-    'expectedFailure',
+    "SkipTest",
+    "TestCase",
+    "BlackboxTestCase",
+    "skipIf",
+    "expectedFailure",
 ]
 
 import doctest
@@ -35,15 +35,11 @@ import subprocess
 import sys
 import tempfile
 
-
 # If Python itself provides an exception, use that
 import unittest
-from unittest import (  # noqa: F401
-    SkipTest,
-    TestCase as _TestCase,
-    skipIf,
-    expectedFailure,
-)
+from unittest import SkipTest
+from unittest import TestCase as _TestCase  # noqa: F401
+from unittest import expectedFailure, skipIf
 
 
 class TestCase(_TestCase):
@@ -66,7 +62,9 @@ class BlackboxTestCase(TestCase):
 
     # TODO(jelmer): Include more possible binary paths.
     bin_directories = [
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "bin")),
+        os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "bin")
+        ),
         "/usr/bin",
         "/usr/local/bin",
     ]
@@ -156,10 +154,10 @@ def tutorial_test_suite():
     import dulwich.client
     import dulwich.config
     import dulwich.index
+    import dulwich.patch  # noqa: F401
     import dulwich.reflog
     import dulwich.repo
     import dulwich.server
-    import dulwich.patch  # noqa: F401
 
     tutorial = [
         "introduction",

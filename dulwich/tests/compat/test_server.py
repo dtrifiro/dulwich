@@ -25,26 +25,22 @@ Warning: these tests should be fairly stable, but when writing/debugging new
     Ctrl-C'ed. On POSIX systems, you can kill the tests with Ctrl-Z, "kill %".
 """
 
-import threading
 import os
 import sys
+import threading
 
-from dulwich.server import (
-    DictBackend,
-    TCPGitServer,
-)
+from dulwich.server import DictBackend, TCPGitServer
 from dulwich.tests import skipIf
 from dulwich.tests.compat.server_utils import (
-    ServerTests,
     NoSideBand64kReceivePackHandler,
+    ServerTests,
 )
-from dulwich.tests.compat.utils import (
-    CompatTestCase,
-    require_git_version,
-)
+from dulwich.tests.compat.utils import CompatTestCase, require_git_version
 
 
-@skipIf(sys.platform == "win32", "Broken on windows, with very long fail time.")
+@skipIf(
+    sys.platform == "win32", "Broken on windows, with very long fail time."
+)
 class GitServerTestCase(ServerTests, CompatTestCase):
     """Tests for client/server compatibility.
 
@@ -63,7 +59,9 @@ class GitServerTestCase(ServerTests, CompatTestCase):
 
     def _start_server(self, repo):
         backend = DictBackend({b"/": repo})
-        dul_server = TCPGitServer(backend, b"localhost", 0, handlers=self._handlers())
+        dul_server = TCPGitServer(
+            backend, b"localhost", 0, handlers=self._handlers()
+        )
         self._check_server(dul_server)
         self.addCleanup(dul_server.shutdown)
         self.addCleanup(dul_server.server_close)
@@ -73,7 +71,9 @@ class GitServerTestCase(ServerTests, CompatTestCase):
         return port
 
 
-@skipIf(sys.platform == "win32", "Broken on windows, with very long fail time.")
+@skipIf(
+    sys.platform == "win32", "Broken on windows, with very long fail time."
+)
 class GitServerSideBand64kTestCase(GitServerTestCase):
     """Tests for client/server compatibility with side-band-64k support."""
 

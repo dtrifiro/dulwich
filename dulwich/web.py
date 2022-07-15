@@ -21,41 +21,32 @@
 
 """HTTP server for dulwich that implements the git smart HTTP protocol."""
 
-from io import BytesIO
-import shutil
-import tempfile
 import gzip
 import os
 import re
+import shutil
 import sys
+import tempfile
 import time
-from typing import List, Tuple, Optional
+from io import BytesIO
+from typing import List, Optional, Tuple
+from urllib.parse import parse_qs
 from wsgiref.simple_server import (
-    WSGIRequestHandler,
     ServerHandler,
+    WSGIRequestHandler,
     WSGIServer,
     make_server,
 )
 
-from urllib.parse import parse_qs
-
-
 from dulwich import log_utils
-from dulwich.protocol import (
-    ReceivableProtocol,
-)
-from dulwich.repo import (
-    BaseRepo,
-    NotGitRepository,
-    Repo,
-)
+from dulwich.protocol import ReceivableProtocol
+from dulwich.repo import BaseRepo, NotGitRepository, Repo
 from dulwich.server import (
-    DictBackend,
     DEFAULT_HANDLERS,
+    DictBackend,
     generate_info_refs,
     generate_objects_info_packs,
 )
-
 
 logger = log_utils.getLogger(__name__)
 
@@ -154,7 +145,9 @@ def get_text_file(req, backend, mat):
     req.nocache()
     path = _url_to_path(mat.group())
     logger.info("Sending plain text file %s", path)
-    return send_file(req, get_repo(backend, mat).get_named_file(path), "text/plain")
+    return send_file(
+        req, get_repo(backend, mat).get_named_file(path), "text/plain"
+    )
 
 
 def get_loose_object(req, backend, mat):
@@ -210,7 +203,9 @@ def get_info_refs(req, backend, mat):
             yield req.forbidden("Unsupported service")
             return
         req.nocache()
-        write = req.respond(HTTP_OK, "application/x-%s-advertisement" % service)
+        write = req.respond(
+            HTTP_OK, "application/x-%s-advertisement" % service
+        )
         proto = ReceivableProtocol(BytesIO().read, write)
         handler = handler_cls(
             backend,
@@ -219,7 +214,9 @@ def get_info_refs(req, backend, mat):
             stateless_rpc=req,
             advertise_refs=True,
         )
-        handler.proto.write_pkt_line(b"# service=" + service.encode("ascii") + b"\n")
+        handler.proto.write_pkt_line(
+            b"# service=" + service.encode("ascii") + b"\n"
+        )
         handler.proto.write_pkt_line(None)
         handler.handle()
     else:
@@ -250,7 +247,6 @@ def _chunk_iter(f):
 
 
 class ChunkReader(object):
-
     def __init__(self, f):
         self._iter = _chunk_iter(f)
         self._buffer = []
@@ -261,7 +257,7 @@ class ChunkReader(object):
                 self._buffer.append(next(self._iter))
             except StopIteration:
                 break
-        f = b''.join(self._buffer)
+        f = b"".join(self._buffer)
         ret = f[:n]
         self._buffer = [f[n:]]
         return ret
@@ -304,7 +300,7 @@ def handle_service_request(req, backend, mat):
         return
     req.nocache()
     write = req.respond(HTTP_OK, "application/x-%s-result" % service)
-    if req.environ.get('HTTP_TRANSFER_ENCODING') == 'chunked':
+    if req.environ.get("HTTP_TRANSFER_ENCODING") == "chunked":
         read = ChunkReader(req.environ["wsgi.input"]).read
     else:
         read = req.environ["wsgi.input"].read
@@ -322,7 +318,9 @@ class HTTPGitRequest(object):
       environ: the WSGI environment for the request.
     """
 
-    def __init__(self, environ, start_response, dumb: bool = False, handlers=None):
+    def __init__(
+        self, environ, start_response, dumb: bool = False, handlers=None
+    ):
         self.environ = environ
         self.dumb = dumb
         self.handlers = handlers
@@ -417,7 +415,9 @@ class HTTPGitApplication(object):
         ("POST", re.compile("/git-receive-pack$")): handle_service_request,
     }
 
-    def __init__(self, backend, dumb: bool = False, handlers=None, fallback_app=None):
+    def __init__(
+        self, backend, dumb: bool = False, handlers=None, fallback_app=None
+    ):
         self.backend = backend
         self.dumb = dumb
         self.handlers = dict(DEFAULT_HANDLERS)
@@ -559,7 +559,7 @@ class WSGIRequestHandlerLogger(WSGIRequestHandler):
 
 class WSGIServerLogger(WSGIServer):
     def handle_error(self, request, client_address):
-        """Handle an error. """
+        """Handle an error."""
         logger.exception(
             "Exception happened during processing of request from %s"
             % str(client_address)

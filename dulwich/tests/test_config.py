@@ -32,15 +32,13 @@ from dulwich.config import (
     StackedConfig,
     _check_section_name,
     _check_variable_name,
-    _format_string,
     _escape_value,
+    _format_string,
     _parse_string,
-    parse_submodules,
     apply_instead_of,
+    parse_submodules,
 )
-from dulwich.tests import (
-    TestCase,
-)
+from dulwich.tests import TestCase
 
 
 class ConfigFileTests(TestCase):
@@ -102,7 +100,9 @@ class ConfigFileTests(TestCase):
 
     def test_comment_character_within_section_string(self):
         cf = self.from_file(b'[branch "foo#bar"] # a comment\nbar= foo\n')
-        self.assertEqual(ConfigFile({(b"branch", b"foo#bar"): {b"bar": b"foo"}}), cf)
+        self.assertEqual(
+            ConfigFile({(b"branch", b"foo#bar"): {b"bar": b"foo"}}), cf
+        )
 
     def test_from_file_section(self):
         cf = self.from_file(b"[core]\nfoo = bar\n")
@@ -111,8 +111,10 @@ class ConfigFileTests(TestCase):
 
     def test_from_file_multiple(self):
         cf = self.from_file(b"[core]\nfoo = bar\nfoo = blah\n")
-        self.assertEqual([b"bar", b"blah"], list(cf.get_multivar((b"core",), b"foo")))
-        self.assertEqual([], list(cf.get_multivar((b"core", ), b"blah")))
+        self.assertEqual(
+            [b"bar", b"blah"], list(cf.get_multivar((b"core",), b"foo"))
+        )
+        self.assertEqual([], list(cf.get_multivar((b"core",), b"blah")))
 
     def test_from_file_utf8_bom(self):
         text = "[core]\nfoo = b\u00e4r\n".encode("utf-8-sig")
@@ -156,7 +158,9 @@ class ConfigFileTests(TestCase):
         self.assertEqual(b"bar", cf.get((b"branch", b"foo"), b"foo"))
 
     def test_from_file_subsection_invalid(self):
-        self.assertRaises(ValueError, self.from_file, b'[branch "foo]\nfoo = bar\n')
+        self.assertRaises(
+            ValueError, self.from_file, b'[branch "foo]\nfoo = bar\n'
+        )
 
     def test_from_file_subsection_not_quoted(self):
         cf = self.from_file(b"[branch.foo]\nfoo = bar\n")
@@ -435,25 +439,35 @@ class ApplyInsteadOfTests(TestCase):
     def test_none(self):
         config = ConfigDict()
         self.assertEqual(
-            'https://example.com/', apply_instead_of(config, 'https://example.com/'))
+            "https://example.com/",
+            apply_instead_of(config, "https://example.com/"),
+        )
 
     def test_apply(self):
         config = ConfigDict()
         config.set(
-            ('url', 'https://samba.org/'), 'insteadOf', 'https://example.com/')
+            ("url", "https://samba.org/"), "insteadOf", "https://example.com/"
+        )
         self.assertEqual(
-            'https://samba.org/',
-            apply_instead_of(config, 'https://example.com/'))
+            "https://samba.org/",
+            apply_instead_of(config, "https://example.com/"),
+        )
 
     def test_apply_multiple(self):
         config = ConfigDict()
         config.set(
-            ('url', 'https://samba.org/'), 'insteadOf', 'https://blah.com/')
+            ("url", "https://samba.org/"), "insteadOf", "https://blah.com/"
+        )
         config.set(
-            ('url', 'https://samba.org/'), 'insteadOf', 'https://example.com/')
+            ("url", "https://samba.org/"), "insteadOf", "https://example.com/"
+        )
         self.assertEqual(
-            [b'https://blah.com/', b'https://example.com/'],
-            list(config.get_multivar(('url', 'https://samba.org/'), 'insteadOf')))
+            [b"https://blah.com/", b"https://example.com/"],
+            list(
+                config.get_multivar(("url", "https://samba.org/"), "insteadOf")
+            ),
+        )
         self.assertEqual(
-            'https://samba.org/',
-            apply_instead_of(config, 'https://example.com/'))
+            "https://samba.org/",
+            apply_instead_of(config, "https://example.com/"),
+        )

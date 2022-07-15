@@ -28,12 +28,12 @@ no means intended to be a full-blown Git command-line interface but just
 a way to test Dulwich.
 """
 
-import os
-import sys
-from getopt import getopt
 import argparse
 import optparse
+import os
 import signal
+import sys
+from getopt import getopt
 from typing import Dict, Type
 
 from dulwich import porcelain
@@ -71,7 +71,7 @@ class cmd_archive(Command):
             type=str,
             help="Retrieve archive from specified remote repo",
         )
-        parser.add_argument('committish', type=str, nargs='?')
+        parser.add_argument("committish", type=str, nargs="?")
         args = parser.parse_args(args)
         if args.remote:
             client, path = get_transport_and_path(args.remote)
@@ -83,8 +83,10 @@ class cmd_archive(Command):
             )
         else:
             porcelain.archive(
-                ".", args.committish, outstream=sys.stdout.buffer,
-                errstream=sys.stderr
+                ".",
+                args.committish,
+                outstream=sys.stdout.buffer,
+                errstream=sys.stderr,
             )
 
 
@@ -107,8 +109,8 @@ class cmd_rm(Command):
 class cmd_fetch_pack(Command):
     def run(self, argv):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--all', action='store_true')
-        parser.add_argument('location', nargs='?', type=str)
+        parser.add_argument("--all", action="store_true")
+        parser.add_argument("location", nargs="?", type=str)
         args = parser.parse_args(argv)
         client, path = get_transport_and_path(args.location)
         r = Repo(".")
@@ -174,13 +176,14 @@ class cmd_diff(Command):
 
         r = Repo(".")
         if args == []:
-            commit_id = b'HEAD'
+            commit_id = b"HEAD"
         else:
             commit_id = args[0]
         commit = parse_commit(r, commit_id)
         parent_commit = r[commit.parents[0]]
         porcelain.diff_tree(
-            r, parent_commit.tree, commit.tree, outstream=sys.stdout.buffer)
+            r, parent_commit.tree, commit.tree, outstream=sys.stdout.buffer
+        )
 
 
 class cmd_dump_pack(Command):
@@ -298,7 +301,7 @@ class cmd_symbolic_ref(Command):
 class cmd_show(Command):
     def run(self, argv):
         parser = argparse.ArgumentParser()
-        parser.add_argument('objectish', type=str, nargs='*')
+        parser.add_argument("objectish", type=str, nargs="*")
         args = parser.parse_args(argv)
         porcelain.show(".", args.objectish or None)
 
@@ -326,7 +329,7 @@ class cmd_submodule(Command):
         parser = optparse.OptionParser()
         options, args = parser.parse_args(args)
         for path, sha in porcelain.submodule_list("."):
-            sys.stdout.write(' %s %s\n' % (sha, path))
+            sys.stdout.write(" %s %s\n" % (sha, path))
 
 
 class cmd_tag(Command):
@@ -397,7 +400,9 @@ class cmd_daemon(Command):
         else:
             gitdir = "."
 
-        porcelain.daemon(gitdir, address=options.listen_address, port=options.port)
+        porcelain.daemon(
+            gitdir, address=options.listen_address, port=options.port
+        )
 
 
 class cmd_web_daemon(Command):
@@ -428,7 +433,9 @@ class cmd_web_daemon(Command):
         else:
             gitdir = "."
 
-        porcelain.web_daemon(gitdir, address=options.listen_address, port=options.port)
+        porcelain.web_daemon(
+            gitdir, address=options.listen_address, port=options.port
+        )
 
 
 class cmd_write_tree(Command):
@@ -474,13 +481,16 @@ class cmd_status(Command):
             for kind, names in status.staged.items():
                 for name in names:
                     sys.stdout.write(
-                        "\t%s: %s\n" % (kind, name.decode(sys.getfilesystemencoding()))
+                        "\t%s: %s\n"
+                        % (kind, name.decode(sys.getfilesystemencoding()))
                     )
             sys.stdout.write("\n")
         if status.unstaged:
             sys.stdout.write("Changes not staged for commit:\n\n")
             for name in status.unstaged:
-                sys.stdout.write("\t%s\n" % name.decode(sys.getfilesystemencoding()))
+                sys.stdout.write(
+                    "\t%s\n" % name.decode(sys.getfilesystemencoding())
+                )
             sys.stdout.write("\n")
         if status.untracked:
             sys.stdout.write("Untracked files:\n\n")
@@ -509,7 +519,9 @@ class cmd_ls_tree(Command):
             action="store_true",
             help="Recusively list tree contents.",
         )
-        parser.add_option("--name-only", action="store_true", help="Only display name.")
+        parser.add_option(
+            "--name-only", action="store_true", help="Only display name."
+        )
         options, args = parser.parse_args(args)
         try:
             treeish = args.pop(0)
@@ -558,17 +570,18 @@ class cmd_pull(Command):
 
 
 class cmd_push(Command):
-
     def run(self, argv):
         parser = argparse.ArgumentParser()
-        parser.add_argument('-f', '--force', action='store_true', help='Force')
-        parser.add_argument('to_location', type=str)
-        parser.add_argument('refspec', type=str, nargs='*')
+        parser.add_argument("-f", "--force", action="store_true", help="Force")
+        parser.add_argument("to_location", type=str)
+        parser.add_argument("refspec", type=str, nargs="*")
         args = parser.parse_args(argv)
         try:
-            porcelain.push('.', args.to_location, args.refspec or None, force=args.force)
+            porcelain.push(
+                ".", args.to_location, args.refspec or None, force=args.force
+            )
         except porcelain.DivergedBranches:
-            sys.stderr.write('Diverged branches; specify --force to override')
+            sys.stderr.write("Diverged branches; specify --force to override")
             return 1
 
 
@@ -585,7 +598,10 @@ class SuperCommand(Command):
 
     def run(self, args):
         if not args:
-            print("Supported subcommands: %s" % ", ".join(self.subcommands.keys()))
+            print(
+                "Supported subcommands: %s"
+                % ", ".join(self.subcommands.keys())
+            )
             return False
         cmd = args[0]
         try:

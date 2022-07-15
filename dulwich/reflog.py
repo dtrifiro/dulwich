@@ -23,11 +23,7 @@
 
 import collections
 
-from dulwich.objects import (
-    format_timezone,
-    parse_timezone,
-    ZERO_SHA,
-)
+from dulwich.objects import ZERO_SHA, format_timezone, parse_timezone
 
 Entry = collections.namedtuple(
     "Entry",
@@ -35,7 +31,9 @@ Entry = collections.namedtuple(
 )
 
 
-def format_reflog_line(old_sha, new_sha, committer, timestamp, timezone, message):
+def format_reflog_line(
+    old_sha, new_sha, committer, timestamp, timezone, message
+):
     """Generate a single reflog line.
 
     Args:

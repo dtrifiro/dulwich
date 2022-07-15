@@ -30,10 +30,7 @@ from dulwich.reflog import (
     parse_reflog_line,
     read_reflog,
 )
-
-from dulwich.tests import (
-    TestCase,
-)
+from dulwich.tests import TestCase
 
 
 class ReflogLineTests(TestCase):

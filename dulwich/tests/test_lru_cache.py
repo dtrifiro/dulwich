@@ -19,12 +19,8 @@
 
 """Tests for the lru_cache module."""
 
-from dulwich import (
-    lru_cache,
-)
-from dulwich.tests import (
-    TestCase,
-)
+from dulwich import lru_cache
+from dulwich.tests import TestCase
 
 
 class TestLRUCache(TestCase):
@@ -117,7 +113,9 @@ class TestLRUCache(TestCase):
         # 'foo' is now most recent, so final cleanup will call it last
         cache["foo"]
         cache.clear()
-        self.assertEqual([("baz", "1"), ("biz", "3"), ("foo", "2")], cleanup_called)
+        self.assertEqual(
+            [("baz", "1"), ("biz", "3"), ("foo", "2")], cleanup_called
+        )
 
     def test_cleanup_on_replace(self):
         """Replacing an object should cleanup the old value."""
