@@ -38,7 +38,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -U pip coverage flake8 fastimport paramiko urllib3
+        pip install -U pip coverage flake8 black isort fastimport paramiko urllib3
     - name: Install gpg on supported platforms
       run: pip install -U gpg
       if: "matrix.os != 'windows-latest' && matrix.python-version != 'pypy3'"
@@ -48,6 +48,8 @@ jobs:
       if: "matrix.python-version != 'pypy3'"
     - name: Style checks
       run: |
+        python -m black --check .
+        python -m isort --check-only .
         python -m flake8
     - name: Typing checks
       run: |

@@ -1,0 +1,25 @@
+[tool.black]
+line-length = 79
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+| build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+known_first_party = ["dulwich"]
+line_length = 79
+
+[tool.mypy]
+ignore_missing_imports = true

@@ -1,5 +1,7 @@
 PYTHON = python3
 PYFLAKES = $(PYTHON) -m pyflakes
+BLACK = $(PYTHON) -m black
+ISORT = $(PYTHON) -m isort
 PEP8 = pep8
 FLAKE8 ?= $(PYTHON) -m flake8
 SETUP = $(PYTHON) setup.py
@@ -58,6 +60,10 @@ flakes:
 
 pep8:
 	$(PEP8) dulwich
+
+fix-style:
+	$(BLACK) .
+	$(ISORT) .
 
 style:
 	$(FLAKE8)

@@ -11,8 +11,8 @@ Coding style
 ------------
 Where possible, please follow PEP8 with regard to coding style.
 
-Furthermore, triple-quotes should always be """, single quotes are ' unless
-using " would result in less escaping within the string.
+Furthermore, triple-quotes should always be """, code should always be formatted
+using `black` (https://github.com/psf/black).
 
 Public methods, functions and classes should all have doc strings. Please use
 Google style docstrings to document parameters and return values.
